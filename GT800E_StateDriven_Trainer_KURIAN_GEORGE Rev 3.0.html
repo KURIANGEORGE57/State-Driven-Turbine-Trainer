@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GT-800E — State-Driven Turbine Trainer | KURIAN GEORGE</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+--bg-deep:#060a10;--bg-panel:#0a0f16;--bg-card:#0c1219;--border:#152030;--border-hi:#1e3048;
+--text-dim:#384858;--text-mid:#607888;--text-body:#8ca0b4;--text-hi:#c8d8e8;--text-bright:#e0ecf4;
+--cyan:#00b8ff;--green:#00e070;--amber:#ffaa20;--red:#ff2040;--orange:#ff7830;--teal:#009999;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg-deep);color:var(--text-body);font-family:'Share Tech Mono',monospace;font-size:11px;
+height:100vh;width:100vw;overflow:hidden;display:flex;flex-direction:column;user-select:none;-webkit-font-smoothing:antialiased}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:9999}
+
+/* TOP BAR */
+#topbar{background:linear-gradient(180deg,#101820,#0a1018);border-bottom:1px solid var(--border);padding:7px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:relative}
+#topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--teal),transparent);opacity:0.4}
+.tb-title{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:13px;color:var(--text-bright);letter-spacing:2px}
+.tb-sep{color:var(--border-hi);margin:0 10px}.tb-sub{color:var(--text-dim);font-size:10px;letter-spacing:1.5px}
+.tb-right{display:flex;align-items:center;gap:14px}
+.sim-time{color:var(--text-mid);font-size:11px}.sim-time span{color:var(--teal)}
+#phase-badge{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;padding:4px 18px;border:1.5px solid var(--border);border-radius:4px;color:var(--text-dim);min-width:200px;text-align:center}
+
+/* MAIN LAYOUT */
+#main{display:flex;flex:1;overflow:hidden}
+
+/* LEFT SIDEBAR */
+#sidebar{width:260px;background:var(--bg-panel);border-right:1px solid var(--border);overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.sb-section{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:8px}
+.sb-label{color:var(--text-dim);font-size:9px;letter-spacing:2px;margin-bottom:6px;font-family:'Chakra Petch',sans-serif}
+
+/* MODE SELECT */
+.mode-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin-bottom:6px}
+.mode-btn{font-family:'Chakra Petch',sans-serif;font-size:9px;letter-spacing:1px;padding:5px 4px;border:1px solid var(--border);border-radius:2px;background:transparent;color:var(--text-dim);cursor:pointer;transition:all .15s;text-align:center}
+.mode-btn:hover{border-color:var(--text-mid);color:var(--text-mid)}
+.mode-btn.active{border-color:var(--teal);color:var(--teal);background:#00999911}
+.mode-btn:disabled{opacity:0.3;cursor:not-allowed}
+
+/* COMMAND BUTTONS */
+.cmd-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.cmd-btn{font-family:'Chakra Petch',sans-serif;font-size:10px;letter-spacing:1px;padding:7px;border:1px solid var(--border);border-radius:3px;background:transparent;cursor:pointer;transition:all .15s;color:var(--text-dim)}
+.cmd-btn:disabled{opacity:0.25;cursor:not-allowed}
+.cmd-btn.green{border-color:#00e07033;color:#00e070}.cmd-btn.green:hover:not(:disabled){background:#00e07011;box-shadow:0 0 8px #00e07022}
+.cmd-btn.red{border-color:#ff204033;color:#ff2040}.cmd-btn.red:hover:not(:disabled){background:#ff204011;box-shadow:0 0 8px #ff204022}
+.cmd-btn.amber{border-color:#ffaa2033;color:#ffaa20}.cmd-btn.amber:hover:not(:disabled){background:#ffaa2011}
+.cmd-btn.gray{border-color:#30405033;color:#607888}.cmd-btn.gray:hover:not(:disabled){background:#30405011}
+
+/* EQUIP STATUS COMPACT */
+.eq-row{display:flex;align-items:center;justify-content:space-between;padding:3px 0;border-bottom:1px solid #0a1018}
+.eq-row:last-child{border:none}
+.eq-dot{width:6px;height:6px;border-radius:50%;background:#1a2430;flex-shrink:0;margin-right:6px}
+.eq-dot.on{background:var(--green)}.eq-dot.warn{background:var(--amber)}.eq-dot.fault{background:var(--red)}
+.eq-name{font-size:9px;color:var(--text-dim);flex:1}
+.eq-val{font-size:9px;color:var(--text-mid);min-width:40px;text-align:right}
+
+/* ALARM SIDEBAR */
+#alarm-area{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;display:flex;flex-direction:column;min-height:80px;max-height:200px}
+.alarm-header{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-bottom:1px solid var(--border)}
+.ack-btn{font-family:'Share Tech Mono',monospace;font-size:8px;padding:2px 8px;border:1px solid var(--border);border-radius:2px;background:transparent;color:var(--text-dim);cursor:pointer;transition:all .15s}
+.ack-btn:hover{border-color:var(--text-mid);color:var(--text-body)}
+#alarm-list{flex:1;overflow-y:auto;font-size:9px;padding:4px}
+.alm-entry{padding:2px 4px;border-bottom:1px solid #080c14}
+.alm-entry.trip{color:var(--red)}.alm-entry.warn{color:var(--amber)}
+.alm-entry.acked{opacity:0.3}
+
+/* CENTER */
+#center{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#tab-bar{display:flex;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0}
+.tab-btn{font-family:'Chakra Petch',sans-serif;font-size:10px;letter-spacing:1.5px;color:var(--text-dim);background:transparent;border:none;border-bottom:2px solid transparent;padding:8px 14px;cursor:pointer;transition:all .15s}
+.tab-btn:hover{color:var(--text-mid)}.tab-btn.active{color:var(--text-hi);background:#0c141e;border-bottom-color:var(--teal)}
+.tab-content{display:none;flex:1;overflow-y:auto;padding:12px}.tab-content.active{display:block}
+.section-hdr{color:var(--text-dim);font-size:9px;letter-spacing:2px;font-family:'Chakra Petch',sans-serif;margin:10px 0 6px;padding-bottom:4px;border-bottom:1px solid #0e1520}
+.section-hdr:first-child{margin-top:0}
+
+/* SVG */
+#svg-box{width:100%;max-width:920px;margin:0 auto;border:1px solid var(--border);border-radius:6px;background:#080e14;position:relative;overflow:hidden}
+#svg-box svg{width:100%;display:block}
+.phase-label-anim{animation:phGlow 2s ease-in-out infinite}.flame{opacity:0;transition:opacity .8s}
+.flame.on{opacity:1;animation:flicker .3s ease-in-out infinite alternate}
+.rotor{transition:none}
+.rotor.spin-slow{animation:spin 4s linear infinite}.rotor.spin-med{animation:spin 1.5s linear infinite}.rotor.spin-fast{animation:spin .5s linear infinite}
+.gear{transition:none}
+.gear.spin-slow{animation:spin 6s linear infinite}.gear.spin-med{animation:spin 2.5s linear infinite}.gear.spin-fast{animation:spin .8s linear infinite}
+.exhaust-particle,.intake-particle{opacity:0;transition:opacity .5s}
+.exhaust-particle.on{opacity:1;animation:flowR 2s linear infinite}.intake-particle.on{opacity:1;animation:flowR 2s linear infinite}
+.oil-line{stroke-dasharray:8 8}.oil-line.on{animation:oilFlow 1s linear infinite}
+.trip-text{opacity:0;transition:opacity .3s}.trip-text.on{opacity:1;animation:tripFlash .5s ease-in-out infinite alternate}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes phGlow{0%,100%{opacity:.4}50%{opacity:.8}}
+@keyframes flicker{0%{opacity:.85}100%{opacity:1}}
+@keyframes flowR{from{transform:translateX(0)}to{transform:translateX(30px)}}
+@keyframes flowL{from{transform:translateX(0)}to{transform:translateX(-30px)}}
+@keyframes oilFlow{from{stroke-dashoffset:16}to{stroke-dashoffset:0}}
+@keyframes tripFlash{from{opacity:.6}to{opacity:1}}
+
+/* GAUGE */
+.gauge-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.gauge{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:6px 10px;min-width:135px;flex:1}
+.gauge .g-lbl{font-size:8px;color:var(--text-dim);letter-spacing:1px;font-family:'Chakra Petch',sans-serif}
+.gauge .g-val{font-size:15px;font-weight:700;font-family:'Chakra Petch',sans-serif;color:var(--text-hi)}
+.gauge .g-unit{font-size:9px;color:var(--text-mid);margin-left:2px}
+.gauge .g-bar{height:3px;background:#0a1018;border-radius:2px;margin-top:3px;overflow:hidden}.gauge .g-bar-fill{height:100%;border-radius:2px;transition:width .3s,background .3s}
+
+/* AUXILIARY TAB - EQUIPMENT PANELS */
+.aux-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;margin-bottom:8px;overflow:hidden}
+.aux-panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #0e1520;background:#0a0f14}
+.aux-panel-hdr .ap-title{font-family:'Chakra Petch',sans-serif;font-size:10px;letter-spacing:1.5px;color:var(--text-mid)}
+.aux-panel-hdr .ap-status{font-family:'Chakra Petch',sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;padding:2px 10px;border-radius:2px;border:1px solid var(--border)}
+.ap-status.off{color:var(--text-dim);border-color:var(--border)}.ap-status.running{color:var(--green);border-color:#00e07044;background:#00e07008}
+.ap-status.starting{color:var(--amber);border-color:#ffaa2044;background:#ffaa2008;animation:pulse 1s infinite}
+.ap-status.tripped{color:var(--red);border-color:#ff204044;background:#ff204008}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.aux-panel-body{padding:10px 12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.aux-ctrl-btns{display:flex;gap:4px}
+.aux-btn{font-family:'Chakra Petch',sans-serif;font-size:9px;letter-spacing:.5px;padding:4px 10px;border:1px solid var(--border);border-radius:2px;background:transparent;color:var(--text-dim);cursor:pointer;transition:all .15s}
+.aux-btn:hover:not(:disabled){border-color:var(--text-mid);color:var(--text-mid)}
+.aux-btn:disabled{opacity:.25;cursor:not-allowed}
+.aux-btn.active{border-color:var(--green);color:var(--green);background:#00e07011}
+.aux-reading{display:flex;flex-direction:column;align-items:center;min-width:80px}
+.aux-reading .ar-val{font-family:'Chakra Petch',sans-serif;font-size:14px;font-weight:700;color:var(--text-hi)}
+.aux-reading .ar-lbl{font-size:8px;color:var(--text-dim);letter-spacing:1px}
+
+/* PERMISSIVE TAB */
+.perm-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;margin-bottom:10px}
+.perm-panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #0e1520;background:#0a0f14}
+.perm-panel-hdr .pp-title{font-family:'Chakra Petch',sans-serif;font-size:10px;letter-spacing:1.5px;color:var(--text-mid)}
+.perm-panel-hdr .pp-count{font-family:'Share Tech Mono',monospace;font-size:10px}
+.pp-count.complete{color:var(--green)}.pp-count.incomplete{color:var(--red)}
+.perm-row{display:flex;align-items:center;padding:4px 12px;border-bottom:1px solid #080c14}
+.perm-row:last-child{border:none}
+.perm-dot{width:8px;height:8px;border-radius:50%;margin-right:8px;flex-shrink:0;border:1px solid}
+.perm-dot.ok{background:var(--green);border-color:#00e07066;box-shadow:0 0 4px #00e07033}
+.perm-dot.fail{background:var(--red);border-color:#ff204066}
+.perm-dot.na{background:#1a2430;border-color:#1a3040}
+.perm-desc{font-size:10px;color:var(--text-body);flex:1}.perm-val{font-size:9px;color:var(--text-mid);min-width:60px;text-align:right}
+.perm-ready-badge{font-family:'Chakra Petch',sans-serif;font-size:16px;font-weight:700;padding:12px 24px;border-radius:4px;text-align:center;letter-spacing:2px;margin-top:6px}
+.perm-ready-badge.ready{color:var(--green);border:2px solid #00e07044;background:#00e07008}
+.perm-ready-badge.not-ready{color:var(--red);border:2px solid #ff204033;background:#ff204008}
+
+/* MONITORING TAB */
+.mon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;margin-bottom:12px}
+.mon-cell{background:var(--bg-card);border:1px solid var(--border);border-radius:3px;padding:6px;text-align:center}
+.mon-cell .mc-lbl{font-size:7px;color:var(--text-dim);letter-spacing:1px;font-family:'Chakra Petch',sans-serif}
+.mon-cell .mc-val{font-family:'Chakra Petch',sans-serif;font-size:13px;font-weight:700;color:var(--text-hi);margin-top:2px}
+.mon-cell .mc-bar{height:3px;background:#0a1218;border-radius:2px;margin-top:3px;overflow:hidden}
+.mon-cell .mc-bar-fill{height:100%;border-radius:2px;transition:width .3s,background .3s}
+
+/* LOG */
+#log-list{font-size:9px;color:var(--text-mid);max-height:calc(100vh - 150px);overflow-y:auto}
+.log-entry{padding:2px 0;border-bottom:1px solid #080c14}
+.log-entry .log-ts{color:var(--text-dim);margin-right:8px}
+
+/* VIBRATION */
+.vib-canvas{width:100%;background:#080c12;border:1px solid var(--border);border-radius:4px}
+.vib-readout-row{display:flex;gap:8px;margin:8px 0}
+.vib-readout{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:8px 14px;flex:1;display:flex;justify-content:space-between;align-items:center}
+.vib-readout .vr-lbl{font-size:9px;color:var(--text-dim);letter-spacing:1px}.vib-readout .vr-val{font-family:'Chakra Petch',sans-serif;font-size:13px;font-weight:700;color:var(--teal)}
+
+/* FAULT INJECTION */
+.fault-btn{font-size:8px!important;padding:4px 8px!important;margin-bottom:2px!important;letter-spacing:.5px!important;border-style:dashed!important;width:100%}
+
+/* FOOTER */
+#footer{background:var(--bg-panel);border-top:1px solid var(--border);padding:4px 16px;display:flex;justify-content:space-between;font-size:9px;color:var(--text-dim);flex-shrink:0}
+
+/* PROGRESS BAR */
+.progress-container{margin:8px 0;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:4px}
+.progress-label{font-family:'Chakra Petch',sans-serif;font-size:9px;letter-spacing:1px;color:var(--text-dim);margin-bottom:4px}
+.progress-bar{height:6px;background:#0a1218;border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--teal),var(--cyan));transition:width .3s}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div style="display:flex;align-items:center">
+    <span class="tb-title">GT-800E</span><span class="tb-sep">│</span>
+    <span class="tb-sub">TCS-3000 — STATE-DRIVEN TURBINE TRAINER</span>
+  </div>
+  <div class="tb-right">
+    <span class="sim-time">SIM: <span id="sim-clock">00:00</span></span>
+    <div id="phase-badge">STANDBY</div>
+  </div>
+</div>
+
+<div id="main">
+<!-- LEFT SIDEBAR -->
+<div id="sidebar">
+  <!-- MODE SELECT -->
+  <div class="sb-section">
+    <div class="sb-label">OPERATING MODE</div>
+    <div class="mode-grid">
+      <button class="mode-btn active" id="mode-crank" onclick="setMode('CRANK')">CRANK</button>
+      <button class="mode-btn" id="mode-fire" onclick="setMode('FIRE')">FIRE</button>
+      <button class="mode-btn" id="mode-auto" onclick="setMode('AUTO')">AUTO</button>
+    </div>
+    <div class="mode-grid">
+      <button class="mode-btn" id="mode-remote" onclick="setMode('REMOTE')">REMOTE</button>
+      <button class="mode-btn" id="mode-cooldwn" onclick="setMode('COOLDOWN')">COOLDOWN</button>
+      <button class="mode-btn" id="mode-manual" onclick="setMode('MANUAL')">MANUAL</button>
+    </div>
+  </div>
+
+  <!-- COMMAND -->
+  <div class="sb-section">
+    <div class="sb-label">TURBINE COMMAND</div>
+    <div class="cmd-grid">
+      <button class="cmd-btn green" id="btnStart" onclick="cmdStart()" disabled>▶ START</button>
+      <button class="cmd-btn amber" id="btnLoad" onclick="cmdLoad()" disabled>⚡ LOAD</button>
+      <button class="cmd-btn amber" id="btnStop" onclick="cmdStop()" disabled>■ STOP</button>
+      <button class="cmd-btn red" id="btnTrip" onclick="cmdTrip()" disabled>✕ TRIP</button>
+    </div>
+    <div class="cmd-grid" style="margin-top:4px">
+      <button class="cmd-btn amber" id="btnCdStart" onclick="cmdCooldownStart()" disabled>❄ CD START</button>
+      <button class="cmd-btn gray" id="btnCdStop" onclick="cmdCooldownStop()" disabled>■ CD STOP</button>
+    </div>
+    <div style="margin-top:4px">
+      <button class="cmd-btn gray" style="width:100%" id="btnReset" onclick="cmdReset()">↺ RESET ALL</button>
+    </div>
+    <div id="cmd-msg" style="color:var(--text-dim);font-size:9px;padding:4px 0;min-height:14px;text-align:center"></div>
+  </div>
+
+  <!-- EQUIPMENT STATUS -->
+  <div class="sb-section">
+    <div class="sb-label">EQUIPMENT STATUS</div>
+    <div id="eq-status-list"></div>
+  </div>
+
+  <!-- FAULT INJECTION -->
+  <div class="sb-section">
+    <div class="sb-label">FAULT INJECTION <span style="color:#ff204066">⚡</span></div>
+    <button class="cmd-btn red fault-btn" id="fi-vib" onclick="faultInject('VIB')" disabled>⚡ HIGH VIBRATION</button>
+    <button class="cmd-btn red fault-btn" id="fi-lo" onclick="faultInject('LO')" disabled>⚡ LO PRESSURE LOSS</button>
+    <button class="cmd-btn red fault-btn" id="fi-gb" onclick="faultInject('GB')" disabled>⚡ GEARBOX OVERHEAT</button>
+    <button class="cmd-btn red fault-btn" id="fi-flame" onclick="faultInject('FLAME')" disabled>⚡ FLAMEOUT</button>
+    <button class="cmd-btn red fault-btn" id="fi-surge" onclick="faultInject('SURGE')" disabled>⚡ COMPRESSOR SURGE</button>
+  </div>
+
+  <!-- ALARMS -->
+  <div id="alarm-area">
+    <div class="alarm-header"><div class="sb-label" style="margin:0">ALARMS <span id="alarm-count"></span></div><button class="ack-btn" onclick="ackAlarms()">ACK</button></div>
+    <div id="alarm-list"><div style="color:#1a2430;padding:4px">No active alarms</div></div>
+  </div>
+</div>
+
+<!-- CENTER -->
+<div id="center">
+  <div id="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('overview',this)">OVERVIEW</button>
+    <button class="tab-btn" onclick="switchTab('auxiliary',this)">AUXILIARY</button>
+    <button class="tab-btn" onclick="switchTab('permissives',this)">PERMISSIVES</button>
+    <button class="tab-btn" onclick="switchTab('monitoring',this)">MONITORING</button>
+    <button class="tab-btn" onclick="switchTab('alarms_tab',this)">ALARMS <span id="tab-alarm-badge" style="color:var(--red);font-size:9px"></span></button>
+    <button class="tab-btn" onclick="switchTab('vibration',this)">VIBRATION</button>
+    <button class="tab-btn" onclick="switchTab('log',this)">LOG</button>
+    <button class="tab-btn" onclick="switchTab('instructor',this)" style="color:var(--amber)">⚙ INSTRUCTOR</button>
+  </div>
+
+  <!-- OVERVIEW TAB -->
+  <div id="tab-overview" class="tab-content active">
+    <div id="svg-box">
+      <svg viewBox="0 0 920 270" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="grd-body" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#141e2a"/><stop offset="100%" stop-color="#1a2838"/></linearGradient>
+          <linearGradient id="grd-flame" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#ff2200"/><stop offset="40%" stop-color="#ff8800"/><stop offset="100%" stop-color="#ffdd00"/></linearGradient>
+          <linearGradient id="grd-exhaust" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#ff6030" stop-opacity="0.5"/><stop offset="100%" stop-color="#ff6030" stop-opacity="0"/></linearGradient>
+          <linearGradient id="grd-intake" x1="1" y1="0" x2="0" y2="0"><stop offset="0%" stop-color="#00b8ff" stop-opacity="0.4"/><stop offset="100%" stop-color="#00b8ff" stop-opacity="0"/></linearGradient>
+          <linearGradient id="grd-load" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#00e070"/><stop offset="100%" stop-color="#00b8ff"/></linearGradient>
+          <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <filter id="glow-lg"><feGaussianBlur stdDeviation="6" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M 30 0 L 0 0 0 30" fill="none" stroke="#0e1a28" stroke-width="0.5"/></pattern>
+        </defs>
+        <rect width="920" height="270" fill="url(#grid)" opacity="0.5"/>
+        <text x="460" y="16" font-family="Chakra Petch" font-size="11" font-weight="700" text-anchor="middle" letter-spacing="3" id="anim-phase-label" fill="#009999" opacity="0.6" class="phase-label-anim">STANDBY</text>
+        <text x="55" y="32" fill="#1a3050" font-family="Chakra Petch" font-size="8" text-anchor="middle" letter-spacing="2">AIR INTAKE</text>
+        <text x="190" y="32" fill="#1a3050" font-family="Chakra Petch" font-size="8" text-anchor="middle" letter-spacing="2">COMPRESSOR (15-STG)</text>
+        <text x="360" y="32" fill="#1a3050" font-family="Chakra Petch" font-size="8" text-anchor="middle" letter-spacing="2">ANNULAR COMBUSTOR</text>
+        <text x="510" y="32" fill="#1a3050" font-family="Chakra Petch" font-size="8" text-anchor="middle" letter-spacing="2">TURBINE (3-STG)</text>
+        <text x="650" y="32" fill="#1a3050" font-family="Chakra Petch" font-size="8" text-anchor="middle" letter-spacing="2">EXHAUST</text>
+        <text x="750" y="32" fill="#1a3050" font-family="Chakra Petch" font-size="8" text-anchor="middle" letter-spacing="2">GEARBOX</text>
+        <text x="870" y="32" fill="#1a3050" font-family="Chakra Petch" font-size="8" text-anchor="middle" letter-spacing="2">GENERATOR</text>
+        <path d="M20,70 Q40,55 55,65 L80,75 L80,175 L55,185 Q40,195 20,180 Z" fill="#141e2a" stroke="#1e3044" stroke-width="1.5"/>
+        <line x1="75" y1="80" x2="85" y2="85" stroke="#2a5060" stroke-width="2" stroke-linecap="round"/>
+        <line x1="75" y1="100" x2="85" y2="102" stroke="#2a5060" stroke-width="2" stroke-linecap="round"/>
+        <line x1="75" y1="125" x2="85" y2="125" stroke="#2a5060" stroke-width="2" stroke-linecap="round"/>
+        <line x1="75" y1="150" x2="85" y2="148" stroke="#2a5060" stroke-width="2" stroke-linecap="round"/>
+        <line x1="75" y1="170" x2="85" y2="165" stroke="#2a5060" stroke-width="2" stroke-linecap="round"/>
+        <rect x="10" y="120" width="40" height="3" rx="1.5" fill="url(#grd-intake)" class="intake-particle" id="intake-p1"/>
+        <rect x="15" y="138" width="35" height="2" rx="1" fill="url(#grd-intake)" class="intake-particle" id="intake-p2" style="animation-delay:0.7s"/>
+        <rect x="5" y="108" width="45" height="2" rx="1" fill="url(#grd-intake)" class="intake-particle" id="intake-p3" style="animation-delay:1.3s"/>
+        <path d="M85,70 L290,50 L290,200 L85,180 Z" fill="url(#grd-body)" stroke="#1e3044" stroke-width="1.5"/>
+        <g opacity="0.5"><line x1="110" y1="66" x2="110" y2="184" stroke="#2a5070" stroke-width="0.8" stroke-dasharray="4 6"/><line x1="130" y1="64" x2="130" y2="186" stroke="#2a5070" stroke-width="0.8" stroke-dasharray="4 6"/><line x1="150" y1="62" x2="150" y2="188" stroke="#2a5070" stroke-width="0.8" stroke-dasharray="4 6"/><line x1="170" y1="60" x2="170" y2="190" stroke="#2a5070" stroke-width="0.8" stroke-dasharray="4 6"/><line x1="190" y1="58" x2="190" y2="192" stroke="#2a5070" stroke-width="0.8" stroke-dasharray="4 6"/><line x1="210" y1="56" x2="210" y2="194" stroke="#2a5070" stroke-width="0.8" stroke-dasharray="4 6"/><line x1="230" y1="55" x2="230" y2="195" stroke="#2a5070" stroke-width="0.8" stroke-dasharray="4 6"/><line x1="250" y1="54" x2="250" y2="196" stroke="#2a5070" stroke-width="0.8" stroke-dasharray="4 6"/><line x1="270" y1="53" x2="270" y2="197" stroke="#2a5070" stroke-width="0.8" stroke-dasharray="4 6"/></g>
+        <rect x="85" y="121" width="205" height="8" rx="2" fill="#0e1a28" stroke="#1a3050" stroke-width="0.8"/>
+        <g class="rotor" id="comp-rotor" style="transform-origin:187px 125px"><circle cx="187" cy="125" r="16" fill="none" stroke="#2a5070" stroke-width="2"/><line x1="187" y1="109" x2="187" y2="141" stroke="#3a6888" stroke-width="1.5"/><line x1="171" y1="125" x2="203" y2="125" stroke="#3a6888" stroke-width="1.5"/><line x1="176" y1="114" x2="198" y2="136" stroke="#3a6888" stroke-width="1"/><line x1="198" y1="114" x2="176" y2="136" stroke="#3a6888" stroke-width="1"/></g>
+        <path d="M290,50 L430,50 L430,200 L290,200 Z" fill="#141e2a" stroke="#1e3044" stroke-width="1.5"/>
+        <rect x="300" y="60" width="120" height="130" rx="6" fill="#0a1218" stroke="#1e3044" stroke-width="1"/>
+        <line x1="320" y1="38" x2="320" y2="60" stroke="#ffaa2044" stroke-width="1.5" id="fuel-line1"/>
+        <line x1="360" y1="38" x2="360" y2="60" stroke="#ffaa2044" stroke-width="1.5" id="fuel-line2"/>
+        <line x1="400" y1="38" x2="400" y2="60" stroke="#ffaa2044" stroke-width="1.5" id="fuel-line3"/>
+        <text x="360" y="35" fill="#ffaa2022" font-family="Share Tech Mono" font-size="7" text-anchor="middle" id="fuel-label">FUEL GAS (DLE)</text>
+        <g class="flame" id="flame-main"><ellipse cx="360" cy="100" rx="40" ry="18" fill="url(#grd-flame)" filter="url(#glow)" opacity="0.9"/><ellipse cx="360" cy="150" rx="40" ry="18" fill="url(#grd-flame)" filter="url(#glow)" opacity="0.9"/><ellipse cx="340" cy="125" rx="20" ry="30" fill="#ff880066" filter="url(#glow)"/><ellipse cx="380" cy="125" rx="20" ry="30" fill="#ff880066" filter="url(#glow)"/></g>
+        <rect x="290" y="121" width="140" height="8" rx="2" fill="#0e1a28" stroke="#1a3050" stroke-width="0.8"/>
+        <path d="M430,50 L580,70 L580,180 L430,200 Z" fill="url(#grd-body)" stroke="#1e3044" stroke-width="1.5"/>
+        <g opacity="0.5"><line x1="460" y1="56" x2="460" y2="194" stroke="#705030" stroke-width="1" stroke-dasharray="5 5"/><line x1="500" y1="62" x2="500" y2="188" stroke="#705030" stroke-width="1" stroke-dasharray="5 5"/><line x1="540" y1="66" x2="540" y2="184" stroke="#705030" stroke-width="1" stroke-dasharray="5 5"/></g>
+        <rect x="430" y="121" width="150" height="8" rx="2" fill="#0e1a28" stroke="#1a3050" stroke-width="0.8"/>
+        <g class="rotor" id="turb-rotor" style="transform-origin:505px 125px"><circle cx="505" cy="125" r="16" fill="none" stroke="#705030" stroke-width="2"/><line x1="505" y1="109" x2="505" y2="141" stroke="#886040" stroke-width="1.5"/><line x1="489" y1="125" x2="521" y2="125" stroke="#886040" stroke-width="1.5"/><line x1="494" y1="114" x2="516" y2="136" stroke="#886040" stroke-width="1"/><line x1="516" y1="114" x2="494" y2="136" stroke="#886040" stroke-width="1"/></g>
+        <path d="M580,70 L680,45 L680,205 L580,180 Z" fill="#101820" stroke="#1e3044" stroke-width="1.5"/>
+        <rect x="680" y="115" width="50" height="4" rx="2" fill="url(#grd-exhaust)" class="exhaust-particle" id="exh-p1"/>
+        <rect x="680" y="130" width="45" height="3" rx="1.5" fill="url(#grd-exhaust)" class="exhaust-particle" id="exh-p2" style="animation-delay:0.5s"/>
+        <rect x="680" y="100" width="55" height="3" rx="1.5" fill="url(#grd-exhaust)" class="exhaust-particle" id="exh-p3" style="animation-delay:1s"/>
+        <rect x="680" y="145" width="40" height="3" rx="1.5" fill="url(#grd-exhaust)" class="exhaust-particle" id="exh-p4" style="animation-delay:1.4s"/>
+        <text x="630" y="50" fill="#ff603022" font-family="Share Tech Mono" font-size="7" text-anchor="middle">TTXM</text>
+        <text x="630" y="62" fill="#ff603044" font-family="Chakra Petch" font-size="13" font-weight="700" text-anchor="middle" id="anim-ttxm">24°C</text>
+        <rect x="580" y="122" width="130" height="6" rx="2" fill="#0e1a28" stroke="#1a3050" stroke-width="0.8"/>
+        <rect x="710" y="80" width="80" height="90" rx="3" fill="#1a2838" stroke="#1e3044" stroke-width="1.5"/>
+        <g class="gear" id="gear-hs" style="transform-origin:730px 115px"><circle cx="730" cy="115" r="14" fill="none" stroke="#607888" stroke-width="2" stroke-dasharray="4 2"/><circle cx="730" cy="115" r="3" fill="#607888"/></g>
+        <g class="gear" id="gear-ls" style="transform-origin:770px 135px;animation-direction:reverse"><circle cx="770" cy="135" r="22" fill="none" stroke="#607888" stroke-width="2" stroke-dasharray="6 3"/><circle cx="770" cy="135" r="4" fill="#607888"/></g>
+        <text x="750" y="185" fill="#1a3050" font-family="Share Tech Mono" font-size="7" text-anchor="middle">4.4:1</text>
+        <rect x="790" y="122" width="30" height="6" rx="2" fill="#0e1a28" stroke="#1a3050" stroke-width="0.8"/>
+        <rect x="820" y="80" width="90" height="90" rx="5" fill="#101a28" stroke="#1e3044" stroke-width="1.5"/>
+        <rect x="830" y="90" width="70" height="70" rx="3" fill="#0a1018" stroke="#152030" stroke-width="1"/>
+        <g class="rotor" id="gen-rotor" style="transform-origin:865px 125px"><circle cx="865" cy="125" r="20" fill="none" stroke="#205080" stroke-width="2"/><line x1="865" y1="105" x2="865" y2="145" stroke="#3070a0" stroke-width="1.5"/><line x1="845" y1="125" x2="885" y2="125" stroke="#3070a0" stroke-width="1.5"/></g>
+        <text x="865" y="182" fill="#205060" font-family="Chakra Petch" font-size="11" font-weight="700" text-anchor="middle" id="gen-mw">0.0 MW</text>
+        <rect x="835" y="190" width="60" height="6" rx="3" fill="#0a1218" stroke="#152030" stroke-width="0.5"/>
+        <rect x="835" y="190" width="0" height="6" rx="3" fill="url(#grd-load)" id="load-bar-fill"/>
+        <line x1="187" y1="210" x2="505" y2="210" stroke="#ffaa2022" stroke-width="2" class="oil-line" id="oil-line1"/>
+        <line x1="505" y1="210" x2="750" y2="210" stroke="#ffaa2022" stroke-width="2" class="oil-line" id="oil-line2"/>
+        <text x="400" y="225" fill="#ffaa2018" font-family="Share Tech Mono" font-size="7" text-anchor="middle">LUBE OIL SYSTEM</text>
+        <circle cx="187" cy="210" r="4" fill="#0a1218" stroke="#1a3040" stroke-width="1" id="brg1"/>
+        <circle cx="505" cy="210" r="4" fill="#0a1218" stroke="#1a3040" stroke-width="1" id="brg2"/>
+        <circle cx="750" cy="210" r="4" fill="#0a1218" stroke="#1a3040" stroke-width="1" id="gb-oil"/>
+        <text x="187" y="232" fill="#1a3040" font-family="Share Tech Mono" font-size="7" text-anchor="middle">BRG-1</text>
+        <text x="505" y="232" fill="#1a3040" font-family="Share Tech Mono" font-size="7" text-anchor="middle">BRG-2</text>
+        <text x="750" y="232" fill="#1a3040" font-family="Share Tech Mono" font-size="7" text-anchor="middle">GB-OIL</text>
+        <text x="400" y="245" fill="#00b8ff22" font-family="Share Tech Mono" font-size="7" text-anchor="middle">CORE SPEED</text>
+        <text x="400" y="257" fill="#00b8ff33" font-family="Chakra Petch" font-size="10" font-weight="700" text-anchor="middle" id="anim-speed">0 RPM</text>
+        <g class="trip-text" id="trip-text"><rect x="350" y="90" width="220" height="70" rx="6" fill="#ff204015" stroke="#ff204066" stroke-width="2"/><text x="460" y="135" fill="#ff2040" font-family="Chakra Petch" font-size="28" font-weight="700" text-anchor="middle" filter="url(#glow-lg)">TURBINE TRIP</text></g>
+      </svg>
+    </div>
+    <div class="section-hdr">PRIMARY INDICATORS</div>
+    <div class="gauge-grid" id="gauges-primary"></div>
+    <div class="section-hdr">EXHAUST TEMPERATURES</div>
+    <div class="gauge-grid" id="gauges-exhaust"></div>
+    <div class="section-hdr">VIBRATION &amp; LUBE OIL</div>
+    <div class="gauge-grid" id="gauges-vib"></div>
+    <div id="progress-area"></div>
+  </div>
+
+  <!-- AUXILIARY TAB -->
+  <div id="tab-auxiliary" class="tab-content">
+    <div class="section-hdr">LUBE OIL SYSTEM</div>
+    <div id="aux-lo"></div>
+    <div class="section-hdr">HYDRAULIC OIL SYSTEM</div>
+    <div id="aux-ho"></div>
+    <div class="section-hdr">VENTILATION &amp; COOLING</div>
+    <div id="aux-vent"></div>
+    <div class="section-hdr">SEAL GAS &amp; FUEL GAS</div>
+    <div id="aux-gas"></div>
+  </div>
+
+  <!-- PERMISSIVES TAB -->
+  <div id="tab-permissives" class="tab-content">
+    <div id="perm-startup"></div>
+    <div id="perm-cranking"></div>
+    <div id="perm-ignition"></div>
+    <div id="perm-loading"></div>
+    <div id="perm-overall"></div>
+  </div>
+
+  <!-- MONITORING TAB -->
+  <div id="tab-monitoring" class="tab-content">
+    <div class="section-hdr">EXHAUST TEMPERATURE SPREAD (°C)</div>
+    <div class="mon-grid" id="mon-exhaust"></div>
+    <div class="section-hdr">BEARING TEMPERATURES (°C)</div>
+    <div class="mon-grid" id="mon-bearing"></div>
+    <div class="section-hdr">DLN COMBUSTION MONITOR</div>
+    <div class="mon-grid" id="mon-dln"></div>
+  </div>
+
+  <!-- ALARMS TAB -->
+  <div id="tab-alarms_tab" class="tab-content">
+    <div class="section-hdr">ALARM MANAGEMENT</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center">
+      <button class="ack-btn" onclick="ackAlarms()" style="font-size:10px;padding:4px 12px">ACK ALL</button>
+      <span style="color:var(--text-dim);font-size:9px">TOTAL: <span id="at-total">0</span> | UNACK: <span id="at-unack" style="color:var(--red)">0</span></span>
+    </div>
+    <div id="alarm-table-body"></div>
+  </div>
+
+  <!-- VIBRATION TAB -->
+  <div id="tab-vibration" class="tab-content">
+    <div class="section-hdr">REAL-TIME SPECTRUM ANALYZER (BRG-1)</div>
+    <canvas class="vib-canvas" id="vib-canvas" height="200"></canvas>
+    <div class="vib-readout-row">
+      <div class="vib-readout"><span class="vr-lbl">1X FREQ (DOMINANT)</span><span class="vr-val" id="vr-1xf">0 Hz</span></div>
+      <div class="vib-readout"><span class="vr-lbl">1X AMP (Unbalance)</span><span class="vr-val" id="vr-1xa">0 mm/s</span></div>
+      <div class="vib-readout"><span class="vr-lbl">2X AMP (Misalign)</span><span class="vr-val" id="vr-2xa">0 mm/s</span></div>
+    </div>
+    <div class="section-hdr">STARTUP BODE PLOT (VIBRATION TREND)</div>
+    <canvas class="vib-canvas" id="bode-canvas" height="140"></canvas>
+  </div>
+
+  <!-- LOG TAB -->
+  <div id="tab-log" class="tab-content">
+    <div class="section-hdr">EVENT LOG</div>
+    <div id="log-list"></div>
+  </div>
+
+  <!-- INSTRUCTOR TAB -->
+  <div id="tab-instructor" class="tab-content">
+    <div class="section-hdr">⚙ FORCE DIAGRAM — PHASE TIMING</div>
+    <div style="padding:6px 10px;color:var(--text-dim);font-size:11px;line-height:1.6">
+      Adjust phase durations (seconds). Changes take effect on next phase entry.<br>
+      <span style="color:var(--amber)">Speed Multiplier</span> scales all timings globally (like VBA ForceDiagram fast mode).
+    </div>
+    <div style="padding:6px 10px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #1a2636;margin-bottom:8px">
+      <span style="color:var(--amber);font-family:'Chakra Petch';font-size:11px;letter-spacing:1px">SPEED ×</span>
+      <button class="cmd-btn gray" style="padding:2px 10px;font-size:11px" onclick="setSimSpeed(1)">1×</button>
+      <button class="cmd-btn gray" style="padding:2px 10px;font-size:11px" onclick="setSimSpeed(2)">2×</button>
+      <button class="cmd-btn gray" style="padding:2px 10px;font-size:11px" onclick="setSimSpeed(5)">5×</button>
+      <button class="cmd-btn gray" style="padding:2px 10px;font-size:11px" onclick="setSimSpeed(10)">10×</button>
+      <span id="speed-mult-label" style="color:var(--teal);font-family:'Chakra Petch';font-size:13px;font-weight:700">1×</span>
+    </div>
+    <div id="timing-grid" style="padding:4px 10px"></div>
+    <div class="section-hdr" style="margin-top:12px">COOLDOWN SETTINGS</div>
+    <div id="cooldown-settings" style="padding:4px 10px"></div>
+  </div>
+</div>
+</div>
+
+<div id="footer">
+  <span>GT-800E | TCS-3000 | 57 MW ISO | 6600 RPM Core / 1500 RPM Gen | Fuel: Natural Gas (DLE)</span>
+  <span>TCS-3000 State-Driven Turbine Trainer v3.1 — KURIAN GEORGE</span>
+</div>
+
+<script>
+// GT-800E STATE-DRIVEN TURBINE TRAINER v3.0
+// Architecture: Operator must manually prepare all auxiliary systems,
+// satisfy permissive checks, then execute startup sequence.
+
+const $=id=>document.getElementById(id);
+const fmt=(v,d)=>Number(v).toFixed(d);
+const lerp=(a,b,t)=>a+(b-a)*Math.min(t,1);
+const rnd=r=>(Math.random()-0.5)*r;
+const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+
+// ═══════════════════════════════════════════════════════════════════
+// INSTRUCTOR TIMING CONFIG (Force Diagram equivalent)
+// ═══════════════════════════════════════════════════════════════════
+let simSpeed=1; // Global speed multiplier (1×, 2×, 5×, 10×)
+const TIM={
+  crank:15,         // Cranking: 0 → 1500 RPM
+  purge:20,         // Purge hold (stack ventilation)
+  fire:8,           // Ignition: fuel admit + flame detect
+  warmup:12,        // Warmup hold at firing speed
+  accel_fire:18,    // Accel to 50% (FIRE mode only)
+  accel_full:35,    // Accel 23% → FSNL (MAN/AUTO/REMOTE direct)
+  accel_cont:20,    // Accel 50% → FSNL (continuation from FIRE_HOLD)
+  loading:55,       // Loading: 0 → 57 MW
+  shutdown:25,      // Normal shutdown ramp-down
+  cooldown:60       // Cooldown timer (real = 36000 for 10hr)
+};
+const TIM_DEFAULTS={...TIM};
+const TIM_LABELS={
+  crank:'Cranking (0→1500 RPM)',
+  purge:'Purge (Stack Ventilation)',
+  fire:'Ignition (Flame Detect)',
+  warmup:'Warmup Hold',
+  accel_fire:'Accel → 50% (FIRE mode)',
+  accel_full:'Accel → FSNL (Full)',
+  accel_cont:'Accel 50%→FSNL (Continue)',
+  loading:'Loading (0→57 MW)',
+  shutdown:'Normal Shutdown',
+  cooldown:'Cooldown Timer'
+};
+function setSimSpeed(s){simSpeed=s;$('speed-mult-label').textContent=s+'×';addLog('Instructor: speed multiplier set to '+s+'×');if($('tab-instructor').classList.contains('active'))renderInstructor();}
+function getT(key){return TIM[key]/simSpeed;}
+
+// ═══════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════
+let simT=0, phaseT=0, phase='STANDBY', opMode='CRANK', tripLatch=false, accelFrom50=false;
+let alarms=[], logEntries=[], bodeHistory=[], lastBodeSec=-1;
+let faultActive=null, faultTimer=0;
+
+// Process values
+let P={speed_rpm:0,speed_pct:0,ttxm:24,load_mw:0,fsr:0,vigv:0,
+  lo_del:0,lo_hdr:0,lo_filt:0,lo_temp:23.8,lo_tank:0,
+  ho_press:0,ho_trip:0,
+  seal_p:0,fuel_p:0,fg_press:0,cpr:1,
+  ex_a:24,ex_b:24,ex_c:24,ex_d:24,
+  vib_a:0,vib_b:0,ws_temp:24,purge:0,load_prog:0,gb_temp:20,gen_rpm:0,
+  vent_dp:0,brg1_t:24,brg2_t:24,brg3_t:24};
+
+// ═══════════════════════════════════════════════════════════════════
+// EQUIPMENT - Each has: state(OFF/STARTING/RUNNING/STOPPING), auto, rampT
+// ═══════════════════════════════════════════════════════════════════
+const EQ={
+  lo_main:{name:'LO Pump A (Main)',state:'OFF',auto:false,rampT:0,rampMax:90,tag:'LOP-01'},
+  lo_aux:{name:'LO Pump B (Standby)',state:'OFF',auto:false,rampT:0,rampMax:90,tag:'LOP-02'},
+  lo_emerg:{name:'LO Pump C (Emergency)',state:'OFF',auto:false,rampT:0,rampMax:30,tag:'LOP-03'},
+  ho_a:{name:'Hydraulic Oil Pump A',state:'OFF',auto:false,rampT:0,rampMax:80,tag:'HOP-01'},
+  ho_b:{name:'Hydraulic Oil Pump B',state:'OFF',auto:false,rampT:0,rampMax:80,tag:'HOP-02'},
+  vent_a:{name:'Encl Vent Fan 1',state:'OFF',auto:false,rampT:0,rampMax:20,tag:'EVF-01'},
+  vent_b:{name:'Encl Vent Fan 2',state:'OFF',auto:false,rampT:0,rampMax:20,tag:'EVF-02'},
+  ome_a:{name:'Oil Mist Eliminator A',state:'OFF',auto:false,rampT:0,rampMax:15,tag:'OME-01'},
+  ome_b:{name:'Oil Mist Eliminator B',state:'OFF',auto:false,rampT:0,rampMax:15,tag:'OME-02'},
+  jo_a:{name:'Jacking Oil Pump A',state:'OFF',auto:false,rampT:0,rampMax:40,tag:'JOP-01'},
+  jo_b:{name:'Jacking Oil Pump B',state:'OFF',auto:false,rampT:0,rampMax:40,tag:'JOP-02'},
+  exh_a:{name:'Exhaust Frame Fan A',state:'OFF',auto:false,rampT:0,rampMax:15,tag:'EFF-01'},
+  exh_b:{name:'Exhaust Frame Fan B',state:'OFF',auto:false,rampT:0,rampMax:15,tag:'EFF-02'},
+  seal:{name:'Seal Gas System (SGS-01)',state:'OFF',auto:false,rampT:0,rampMax:50,tag:'SGS-01'},
+  esdv:{name:'ESDV Fuel Gas Valve',state:'OFF',auto:false,rampT:0,rampMax:40,tag:'ESDV-FG'}
+};
+
+// Phase labels
+const PH_LBL={STANDBY:'STANDBY',LO_START:'LO PUMP START',CRANK:'CRANKING',PURGE:'PURGING',PURGE_HOLD:'PURGE HOLD',FIRE:'FIRING',
+  WARMUP:'WARMUP',ACCEL_FIRE:'ACCEL (→ 50%)',FIRE_HOLD:'FIRE HOLD (50%)',ACCEL:'ACCELERATION',FSNL:'FSNL',VIB_ANALYSIS:'VIB ANALYSIS',LOADING:'LOADING',
+  BASE_LOAD:'BASE LOAD',NORMAL_SHUTDOWN:'SHUTDOWN',TURNING_GEAR:'TURNING GEAR',COOLDOWN_ACTIVE:'COOLDOWN',COOLDOWN:'COOLDOWN READY',TRIP:'TRIP'};
+
+// ═══════════════════════════════════════════════════════════════════
+// PERMISSIVE CHECKS
+// ═══════════════════════════════════════════════════════════════════
+function evalPerms(){
+  const loRunning = EQ.lo_main.state==='RUNNING'||EQ.lo_aux.state==='RUNNING';
+  const hoRunning = EQ.ho_a.state==='RUNNING'||EQ.ho_b.state==='RUNNING';
+  const ventRunning = EQ.vent_a.state==='RUNNING'||EQ.vent_b.state==='RUNNING';
+  const omeRunning = EQ.ome_a.state==='RUNNING'||EQ.ome_b.state==='RUNNING';
+  const sealRunning = EQ.seal.state==='RUNNING';
+  const esdvOpen = EQ.esdv.state==='RUNNING';
+
+  return {
+    startup:{
+      items:[
+        {desc:'LO Pump Running', ok:loRunning, val:loRunning?'RUN':'OFF'},
+        {desc:'LO Delivery Press > 5 barg', ok:P.lo_del>=5, val:fmt(P.lo_del,1)+' barg'},
+        {desc:'LO Header Press > 2.5 barg', ok:P.lo_hdr>=2.5, val:fmt(P.lo_hdr,1)+' barg'},
+        {desc:'LO Tank Level > 80%', ok:P.lo_tank>=80, val:fmt(P.lo_tank,0)+'%'},
+        {desc:'LO Filter DP Normal', ok:P.lo_filt<2, val:fmt(P.lo_filt,2)+' bar'},
+        {desc:'LO Temp Normal (< 65°C)', ok:P.lo_temp<65, val:fmt(P.lo_temp,1)+'°C'},
+        {desc:'Enclosure Ventilation Running', ok:ventRunning, val:ventRunning?'RUN':'OFF'},
+        {desc:'Oil Mist Eliminator Running', ok:omeRunning, val:omeRunning?'RUN':'OFF'},
+        {desc:'Vent DP Normal', ok:P.vent_dp<0||ventRunning, val:ventRunning?'OK':'—'},
+        {desc:'DCS Remote Permissive (TCS-3000)', ok:true, val:'OK'},
+        {desc:'Fire & Gas Detection Healthy', ok:true, val:'OK'},
+        {desc:'Enclosure Gas Detection Normal', ok:true, val:'OK'},
+      ]
+    },
+    cranking:{
+      items:[
+        {desc:'LO Pump Running', ok:loRunning, val:loRunning?'RUN':'OFF'},
+        {desc:'LO Delivery Press Not Low', ok:P.lo_del>=5, val:fmt(P.lo_del,1)+' barg'},
+        {desc:'LO Header Press Not Low', ok:P.lo_hdr>=2.5, val:fmt(P.lo_hdr,1)+' barg'},
+        {desc:'HO Pump Running', ok:hoRunning, val:hoRunning?'RUN':'OFF'},
+        {desc:'HO Pressure > 98 barg', ok:P.ho_press>=98, val:fmt(P.ho_press,0)+' barg'},
+        {desc:'LO Rundown Tank Level > 80%', ok:P.lo_tank>=80, val:fmt(P.lo_tank,0)+'%'},
+        {desc:'Jacking Oil Active', ok:EQ.jo_a.state==='RUNNING'||EQ.jo_b.state==='RUNNING', val:(EQ.jo_a.state==='RUNNING'||EQ.jo_b.state==='RUNNING')?'RUN':'OFF'},
+        {desc:'Fuel Gas Temperature Normal', ok:P.fg_press>0||esdvOpen, val:esdvOpen?'OK':'—'},
+      ]
+    },
+    ignition:{
+      items:[
+        {desc:'LO Delivery Press Not Low', ok:P.lo_del>=5, val:fmt(P.lo_del,1)+' barg'},
+        {desc:'ESDV Fuel Gas Open', ok:esdvOpen, val:esdvOpen?'OPEN':'CLOSED'},
+        {desc:'Fuel Gas Press OK', ok:P.fg_press>=25, val:fmt(P.fg_press,0)+' barg'},
+        {desc:'Seal Gas System Active', ok:sealRunning, val:sealRunning?'RUN':'OFF'},
+        {desc:'HO Pressure Not Low', ok:P.ho_press>=98, val:fmt(P.ho_press,0)+' barg'},
+        {desc:'Purge Timer Complete', ok:phase!=='PURGE'&&phase!=='CRANK'&&phase!=='STANDBY', val:phase==='PURGE'?'IN PROGRESS':phase==='PURGE_HOLD'?'COMPLETE':'—'},
+      ]
+    },
+    loading:{
+      items:[
+        {desc:'LO Delivery Press Not Low', ok:P.lo_del>=5, val:fmt(P.lo_del,1)+' barg'},
+        {desc:'LO Header Press Not Low', ok:P.lo_hdr>=2.5, val:fmt(P.lo_hdr,1)+' barg'},
+        {desc:'LO Pump Running', ok:loRunning, val:loRunning?'RUN':'OFF'},
+        {desc:'Speed at FSNL (100%)', ok:P.speed_pct>=99, val:fmt(P.speed_pct,1)+'%'},
+        {desc:'Generator Sync Check (TCS-3000)', ok:P.speed_pct>=99, val:P.speed_pct>=99?'OK':'—'},
+      ]
+    }
+  };
+}
+
+function allPermsOK(section){
+  const perms=evalPerms();
+  return perms[section].items.every(i=>i.ok);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// EQUIPMENT OPERATIONS
+// ═══════════════════════════════════════════════════════════════════
+function eqStart(key){
+  const eq=EQ[key];
+  if(!eq||eq.state==='RUNNING'||eq.state==='STARTING')return;
+  if(phase==='TRIP'){setMsg('Cannot start — TRIP active');return;}
+  eq.state='STARTING';eq.rampT=0;
+  addLog(eq.name+' — START command');
+}
+function eqStop(key){
+  const eq=EQ[key];
+  if(!eq||eq.state==='OFF'||eq.state==='STOPPING')return;
+  eq.state='STOPPING';eq.rampT=eq.rampMax;
+  addLog(eq.name+' — STOP command');
+}
+function eqToggleAuto(key){
+  const eq=EQ[key];if(!eq)return;
+  eq.auto=!eq.auto;
+  addLog(eq.name+' — '+(eq.auto?'AUTO':'MANUAL'));
+}
+
+function tickEquipment(){
+  for(const[key,eq] of Object.entries(EQ)){
+    if(eq.state==='STARTING'){
+      eq.rampT=Math.min(eq.rampT+1*simSpeed,eq.rampMax);
+      if(eq.rampT>=eq.rampMax){
+        eq.state='RUNNING';
+        addLog(eq.name+' — RUNNING');
+        addAlarm(eq.name+' started','info');
+      }
+    }
+    if(eq.state==='STOPPING'){
+      eq.rampT=Math.max(eq.rampT-2*simSpeed,0);
+      if(eq.rampT<=0){
+        eq.state='OFF';
+        addLog(eq.name+' — OFF');
+      }
+    }
+  }
+  // Update process values from equipment
+  const loFrac=Math.max(eqFrac('lo_main'),eqFrac('lo_aux'));
+  P.lo_del=lerp(0,9.5,loFrac); P.lo_hdr=lerp(0,6.8,loFrac); P.lo_filt=lerp(0,0.92,loFrac);
+  P.lo_temp=lerp(23.8,47.6,loFrac); P.lo_tank=lerp(0,84,loFrac);
+  const hoFrac=Math.max(eqFrac('ho_a'),eqFrac('ho_b'));
+  P.ho_press=lerp(0,105,hoFrac);
+  const sealFrac=eqFrac('seal');
+  P.seal_p=lerp(0,7,sealFrac);
+  const esdvFrac=eqFrac('esdv');
+  P.fg_press=lerp(0,32,esdvFrac); P.fuel_p=lerp(0,40,esdvFrac);
+}
+
+function eqFrac(key){
+  const eq=EQ[key];if(!eq)return 0;
+  return eq.rampT/eq.rampMax;
+}
+
+function eqRunning(key){return EQ[key]&&EQ[key].state==='RUNNING';}
+
+// ═══════════════════════════════════════════════════════════════════
+// COMMANDS
+// ═══════════════════════════════════════════════════════════════════
+function setMode(m){
+  // COOLDOWN can only be selected during TURNING_GEAR/COOLDOWN phases
+  if(m==='COOLDOWN'&&!['TURNING_GEAR','COOLDOWN','COOLDOWN_ACTIVE'].includes(phase)){setMsg('Cooldown only available at turning gear');return;}
+  // Can't change mode during active sequence phases (except FIRE_HOLD which waits for MAN/AUTO/REMOTE)
+  if(['CRANK','PURGE','FIRE','WARMUP','ACCEL_FIRE','ACCEL','LOADING','NORMAL_SHUTDOWN','COOLDOWN_ACTIVE'].includes(phase)){setMsg('Cannot change mode during active sequence');return;}
+  // FIRE_HOLD: only MAN/AUTO/REMOTE allowed to continue
+  if(phase==='FIRE_HOLD'&&!['MANUAL','AUTO','REMOTE'].includes(m)){setMsg('Select MANUAL, AUTO, or REMOTE to continue');return;}
+  // TRIP: only CRANK allowed for reset
+  if(phase==='TRIP'&&m!=='CRANK'){setMsg('Must select CRANK after trip');return;}
+  opMode=m;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  const el=$('mode-'+m.toLowerCase().replace('cooldown','cooldwn'));if(el)el.classList.add('active');
+  addLog('Mode selected: '+m);
+  // If in FIRE_HOLD and operator selects MAN/AUTO/REMOTE, continue acceleration
+  if(phase==='FIRE_HOLD'&&['MANUAL','AUTO','REMOTE'].includes(m)){
+    accelFrom50=true;
+    addLog(m+' mode — continuing acceleration to FSNL');
+    addAlarm(m+' mode selected — accelerating to 100%','info');
+    goPhase('ACCEL');
+  }
+}
+
+function setMsg(m){$('cmd-msg').textContent=m;setTimeout(()=>{if($('cmd-msg').textContent===m)$('cmd-msg').textContent=''},4000);}
+
+function cmdStart(){
+  if(phase!=='STANDBY'){setMsg('Must be in STANDBY');return;}
+  if(!allPermsOK('startup')){setMsg('TCS Startup Permit NOT satisfied');addAlarm('START rejected — TCS Startup Permit incomplete','warn');return;}
+  if(!allPermsOK('cranking')){setMsg('Cranking Permit NOT satisfied');addAlarm('START rejected — Cranking Permit incomplete','warn');return;}
+  // Ignition permit is evaluated AFTER purge (during sequence), not before start
+  addLog('START command accepted — Mode: '+opMode);
+  addAlarm('Turbine START initiated','info');
+  goPhase('CRANK');
+}
+
+function cmdLoad(){
+  if(phase!=='FSNL'&&phase!=='VIB_ANALYSIS'){setMsg('Must be at FSNL');return;}
+  if(!allPermsOK('loading')){setMsg('Loading Permit NOT satisfied');addAlarm('LOAD rejected — Loading Permit incomplete','warn');return;}
+  addLog('LOAD command — closing generator breaker');
+  goPhase('LOADING');
+}
+
+function cmdStop(){
+  if(!['FIRE_HOLD','FSNL','VIB_ANALYSIS','LOADING','BASE_LOAD'].includes(phase)){setMsg('Not in running state');return;}
+  addLog('NORMAL SHUTDOWN initiated');
+  goPhase('NORMAL_SHUTDOWN');
+}
+
+function cmdTrip(){
+  if(phase==='STANDBY'||phase==='COOLDOWN')return;
+  doTrip();
+}
+
+function doTrip(){
+  if(tripLatch)return;
+  tripLatch=true;
+  faultActive=null;faultTimer=0;
+  addLog('═══ TURBINE TRIP ═══');
+  addAlarm('TURBINE TRIP ACTIVATED','trip');
+  goPhase('TRIP');
+}
+
+function cmdCooldownStart(){
+  if(phase!=='TURNING_GEAR'&&phase!=='COOLDOWN'){setMsg('Not at turning gear');return;}
+  if(opMode!=='COOLDOWN'){setMsg('Select COOLDOWN mode first');return;}
+  addLog('COOLDOWN START — maintaining turning gear, monitoring wheelspace temps');
+  addAlarm('Cooldown sequence started — 10hr timer (sim: 60s)','info');
+  goPhase('COOLDOWN_ACTIVE');
+}
+
+function cmdCooldownStop(){
+  if(phase!=='COOLDOWN'){setMsg('Cooldown not ready to stop');return;}
+  if(P.ws_temp>60){setMsg('Wheelspace temp > 60°C — cannot stop cooldown');addAlarm('CD STOP rejected — WS temp '+fmt(P.ws_temp,0)+'°C > 60°C','warn');return;}
+  addLog('COOLDOWN STOP — wheelspace temp '+fmt(P.ws_temp,0)+'°C — unit on standby');
+  addAlarm('Cooldown complete — unit on standby','info');
+  P.speed_rpm=0;P.speed_pct=0;
+  goPhase('STANDBY');
+  setMode('CRANK');
+}
+
+function cmdReset(){
+  phase='STANDBY';phaseT=0;simT=0;tripLatch=false;accelFrom50=false;faultActive=null;faultTimer=0;
+  P={speed_rpm:0,speed_pct:0,ttxm:24,load_mw:0,fsr:0,vigv:0,lo_del:0,lo_hdr:0,lo_filt:0,lo_temp:23.8,lo_tank:0,ho_press:0,ho_trip:0,seal_p:0,fuel_p:0,fg_press:0,cpr:1,ex_a:24,ex_b:24,ex_c:24,ex_d:24,vib_a:0,vib_b:0,ws_temp:24,purge:0,load_prog:0,gb_temp:20,gen_rpm:0,vent_dp:0,brg1_t:24,brg2_t:24,brg3_t:24};
+  for(const eq of Object.values(EQ)){eq.state='OFF';eq.auto=false;eq.rampT=0;}
+  alarms=[];logEntries=[];bodeHistory=[];lastBodeSec=-1;opMode='CRANK';
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  $('mode-crank').classList.add('active');
+  addLog('System RESET — all states cleared');
+  updateAll();
+}
+
+function goPhase(p){
+  phase=p;phaseT=0;
+  if(p!=='TRIP')tripLatch=false;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SIMULATION TICK
+// ═══════════════════════════════════════════════════════════════════
+function tick(){
+  simT+=0.2;phaseT+=0.2*simSpeed;
+  P.gen_rpm=P.speed_rpm/4.4;
+
+  // Equipment ramps
+  tickEquipment();
+
+  // Phase logic
+  if(phase==='STANDBY'){
+    // Nothing — waiting for operator
+    P.speed_rpm=0;P.speed_pct=0;P.fsr=0;P.load_mw=0;
+  }
+
+  if(phase==='CRANK'){
+    let t=phaseT/getT('crank');
+    P.speed_rpm=lerp(0,1500,Math.min(t,1));P.speed_pct=lerp(0,23,Math.min(t,1));
+    P.ttxm=lerp(24,28,t)+rnd(0.5);P.fsr=lerp(0,5,t);
+    P.brg1_t=lerp(24,26,t);P.brg2_t=lerp(24,25.5,t);
+    P.vib_a=0.1+Math.random()*0.05;P.vib_b=0.1+Math.random()*0.05;
+    if(phaseT>=getT('crank')){
+      addLog('Cranking complete — 1500 RPM');
+      if(opMode==='CRANK'){addLog('Mode CRANK: water-wash hold — returning to standby');goPhase('STANDBY');}
+      else{goPhase('PURGE');}
+    }
+  }
+
+  if(phase==='PURGE'){
+    P.speed_rpm=1500;P.speed_pct=23;P.purge=Math.min(phaseT/getT('purge'),1);
+    P.vib_a=0.2+Math.random()*0.1;P.vib_b=0.2+Math.random()*0.08;
+    if(phaseT>=getT('purge')){
+      addLog('Purge complete (20s)');
+      if(opMode==='FIRE'||opMode==='AUTO'){
+        if(allPermsOK('ignition')){goPhase('FIRE');}
+        else{addAlarm('Ignition Permit NOT satisfied — holding','warn');addLog('Holding at purge — Ignition Permit incomplete');goPhase('PURGE_HOLD');}
+      }else{addLog('Mode not AUTO/FIRE — holding');goPhase('PURGE_HOLD');}
+    }
+  }
+
+  if(phase==='PURGE_HOLD'){
+    P.speed_rpm=1500;P.speed_pct=23;P.purge=1;
+    P.vib_a=0.2+Math.random()*0.1;P.vib_b=0.2+Math.random()*0.08;
+    // Auto-check fire permissives every 2 seconds
+    if((opMode==='FIRE'||opMode==='AUTO')&&Math.floor(phaseT)%2===0&&phaseT-Math.floor(phaseT)<0.25){
+      if(allPermsOK('ignition')){addLog('Ignition Permit now satisfied — proceeding to ignition');goPhase('FIRE');}
+    }
+  }
+
+  if(phase==='FIRE'){
+    let t=phaseT/8;
+    P.speed_rpm=lerp(1500,1800,t);P.speed_pct=lerp(23,27,t);
+    P.ttxm=lerp(28,260,Math.min(t*1.5,1))+rnd(5);P.fsr=lerp(5,18,t);
+    P.vib_a=0.3+Math.random()*0.2;P.vib_b=0.3+Math.random()*0.15;
+    if(phaseT>=getT('fire')){addLog('Flame detected — crossfire');goPhase('WARMUP');}
+  }
+
+  if(phase==='WARMUP'){
+    let t=phaseT/12;
+    P.speed_rpm=lerp(1800,1500,Math.min(t,0.3))+rnd(5);P.speed_pct=lerp(27,23,Math.min(t,0.3));
+    P.ttxm=lerp(260,200,t)+rnd(3);P.fsr=lerp(18,12,t);
+    P.vib_a=0.3+Math.random()*0.15;P.vib_b=0.3+Math.random()*0.12;
+    if(phaseT>=getT('warmup')){addLog('Warmup complete');
+      if(opMode==='FIRE'){addLog('FIRE mode — accelerating to 50%');goPhase('ACCEL_FIRE');}
+      else{accelFrom50=false;addLog(opMode+' mode — accelerating to FSNL');goPhase('ACCEL');}
+    }
+  }
+
+
+  if(phase==='ACCEL_FIRE'){
+    let t=phaseT/getT('accel_fire');
+    P.speed_rpm=lerp(1500,3300,t);P.speed_pct=lerp(23,50,t);
+    P.ttxm=lerp(200,420,Math.min(t*1.2,0.85))+rnd(3);
+    P.fsr=lerp(20,45,t);P.vigv=lerp(0,50,t);P.cpr=lerp(1,10,t);
+    P.ex_a=lerp(180,380,t)+rnd(5);P.ex_b=lerp(178,378,t)+rnd(5);
+    P.ex_c=lerp(182,382,t)+rnd(5);P.ex_d=lerp(179,379,t)+rnd(5);
+    P.ws_temp=lerp(24,180,t);P.gb_temp=lerp(48,55,t);
+    P.brg1_t=lerp(26,42,t)+rnd(1);P.brg2_t=lerp(25.5,40,t)+rnd(1);
+    let rpm=P.speed_rpm;let base=lerp(0.4,1.0,t);
+    let c1=3.8*Math.exp(-Math.pow((rpm-2800)/350,2));
+    P.vib_a=base+c1+Math.random()*0.25;P.vib_b=(base+c1*0.85)+Math.random()*0.2;
+    if(phaseT>=getT('accel_fire')){
+      addLog('50% speed reached (3300 RPM) — FIRE mode hold');
+      addAlarm('FIRE sequence complete — select MAN/AUTO/REMOTE to continue','info');
+      goPhase('FIRE_HOLD');
+    }
+  }
+
+  if(phase==='FIRE_HOLD'){
+    P.speed_rpm=3300+rnd(5);P.speed_pct=50;P.fsr=45+rnd(1);
+    P.ttxm=400+rnd(5);P.vigv=50;P.cpr=10+rnd(0.3);
+    P.vib_a=1.0+Math.random()*0.2;P.vib_b=0.9+Math.random()*0.18;
+    P.gb_temp=55+rnd(1);P.brg1_t=42+rnd(1);P.brg2_t=40+rnd(1);
+    P.ex_a=380+rnd(8);P.ex_b=378+rnd(8);P.ex_c=382+rnd(8);P.ex_d=379+rnd(8);
+  }
+
+  if(phase==='ACCEL'){
+    // Acceleration: from 50% (if from FIRE_HOLD) or from 23% (direct MAN/AUTO/REMOTE)
+    const fromFire=accelFrom50;
+    const dur=fromFire?getT('accel_cont'):getT('accel_full');
+    let t=phaseT/dur;
+    const spdA=fromFire?3300:1500, pctA=fromFire?50:23;
+    const ttxA=fromFire?400:200, fsrA=fromFire?45:20, vigvA=fromFire?50:0, cprA=fromFire?10:1;
+    const exA=fromFire?380:180, wsA=fromFire?180:24, gbA=fromFire?55:48;
+    const b1A=fromFire?42:26, b2A=fromFire?40:25.5;
+    P.speed_rpm=lerp(spdA,6600,t);P.speed_pct=lerp(pctA,100,t);
+    P.ttxm=lerp(ttxA,550,Math.min(t*1.2,0.85))+rnd(3);
+    P.fsr=lerp(fsrA,70,t);P.vigv=lerp(vigvA,100,t);P.cpr=lerp(cprA,21,t);
+    P.ex_a=lerp(exA,520,t)+rnd(5);P.ex_b=lerp(exA-2,518,t)+rnd(5);
+    P.ex_c=lerp(exA+2,522,t)+rnd(5);P.ex_d=lerp(exA-1,519,t)+rnd(5);
+    P.ws_temp=lerp(wsA,300,t);P.gb_temp=lerp(gbA,62,t);
+    P.brg1_t=lerp(b1A,55,t)+rnd(1);P.brg2_t=lerp(b2A,52,t)+rnd(1);
+    // Critical speed resonance
+    let rpm=P.speed_rpm;
+    let base=lerp(0.4,1.6,t);
+    let c1=3.8*Math.exp(-Math.pow((rpm-2800)/350,2));
+    let c2=1.2*Math.exp(-Math.pow((rpm-5200)/500,2));
+    P.vib_a=base+c1+c2+Math.random()*0.25;
+    P.vib_b=(base+c1*0.85+c2*0.9)+Math.random()*0.2;
+    if(phaseT>=dur){addLog('FSNL reached — 6600 RPM');goPhase('FSNL');}
+  }
+
+  if(phase==='FSNL'){
+    P.speed_rpm=6600+rnd(5);P.speed_pct=100;P.fsr=70+rnd(1);
+    P.ttxm=530+rnd(5);P.vigv=100;P.cpr=21+rnd(0.3);
+    P.vib_a=1.5+Math.random()*0.3;P.vib_b=1.4+Math.random()*0.25;
+    P.gb_temp=62+rnd(1);P.brg1_t=55+rnd(1);P.brg2_t=52+rnd(1);
+    P.ex_a=520+rnd(8);P.ex_b=518+rnd(8);P.ex_c=522+rnd(8);P.ex_d=519+rnd(8);
+  }
+
+  if(phase==='VIB_ANALYSIS'){
+    P.speed_rpm=6600+rnd(5);P.speed_pct=100;
+    P.vib_a=1.8+Math.random()*1.2;P.vib_b=1.7+Math.random()*1.1;
+  }
+
+  if(phase==='LOADING'){
+    let t=Math.min(phaseT/getT('loading'),1);
+    P.load_mw=lerp(0,57,t);P.load_prog=t;P.fsr=lerp(70,100,t);
+    P.ttxm=lerp(530,590,t)+rnd(3);P.gb_temp=lerp(62,68,t);
+    P.vib_a=lerp(1.5,2.8,t)+Math.random()*0.4;P.vib_b=lerp(1.4,2.6,t)+Math.random()*0.35;
+    P.brg1_t=lerp(55,62,t)+rnd(1);P.brg2_t=lerp(52,58,t)+rnd(1);
+    if(phaseT>=getT('loading')){addLog('BASE LOAD — 57 MW');addAlarm('Base load reached','info');goPhase('BASE_LOAD');}
+  }
+
+  if(phase==='BASE_LOAD'){
+    P.load_mw=57+rnd(0.5);P.fsr=100+rnd(0.5);P.ttxm=590+rnd(5);
+    P.vib_a=2.3+Math.random()*0.5;P.vib_b=2.1+Math.random()*0.45;
+    P.gb_temp=68+rnd(1);P.brg1_t=62+rnd(1);P.brg2_t=58+rnd(1);
+  }
+
+  if(phase==='NORMAL_SHUTDOWN'){
+    P.load_mw=lerp(P.load_mw,0,0.04);P.fsr=lerp(P.fsr,0,0.03);
+    P.speed_rpm=lerp(P.speed_rpm,0,0.03);P.speed_pct=lerp(P.speed_pct,0,0.03);
+    P.ttxm=lerp(P.ttxm,60,0.02);P.vigv=lerp(P.vigv,0,0.03);P.cpr=lerp(P.cpr,1,0.03);
+    P.ex_a=lerp(P.ex_a,40,0.02);P.ex_b=lerp(P.ex_b,40,0.02);P.ex_c=lerp(P.ex_c,40,0.02);P.ex_d=lerp(P.ex_d,40,0.02);
+    let rpm=P.speed_rpm;let c1=2.5*Math.exp(-Math.pow((rpm-2800)/400,2));
+    P.vib_a=0.3+c1+Math.random()*0.15;P.vib_b=0.3+c1*0.85+Math.random()*0.12;
+    P.gb_temp=lerp(P.gb_temp,30,0.02);P.brg1_t=lerp(P.brg1_t,30,0.02);P.brg2_t=lerp(P.brg2_t,30,0.02);
+    if(P.speed_rpm<10&&phaseT>5){addLog('Shutdown complete — entering turning gear');P.speed_rpm=150;P.speed_pct=2.3;goPhase('TURNING_GEAR');}
+  }
+
+  if(phase==='TURNING_GEAR'){
+    // Turning gear: shaft rotates slowly at ~150 RPM, temps hold
+    P.speed_rpm=150+rnd(3);P.speed_pct=2.3;P.load_mw=0;P.fsr=0;
+    P.vib_a=0.05+Math.random()*0.02;P.vib_b=0.05+Math.random()*0.02;
+    // Temps slowly drift but don't actively cool without cooldown command
+    P.ttxm=lerp(P.ttxm,Math.max(P.ttxm-0.02,80),0.005);
+    P.ws_temp=lerp(P.ws_temp,Math.max(P.ws_temp-0.01,70),0.005);
+    P.gb_temp=lerp(P.gb_temp,40,0.005);
+    P.brg1_t=lerp(P.brg1_t,35,0.005);P.brg2_t=lerp(P.brg2_t,35,0.005);
+    P.ex_a=lerp(P.ex_a,80,0.005);P.ex_b=lerp(P.ex_b,80,0.005);
+    P.ex_c=lerp(P.ex_c,80,0.005);P.ex_d=lerp(P.ex_d,80,0.005);
+    // Wait for operator to select COOLDOWN mode and press CD START
+  }
+
+  if(phase==='COOLDOWN_ACTIVE'){
+    // Active cooldown: turning gear + forced cooling, accelerated 10hr→60s sim
+    P.speed_rpm=150+rnd(3);P.speed_pct=2.3;P.load_mw=0;P.fsr=0;
+    P.vib_a=0.05+Math.random()*0.02;P.vib_b=0.05+Math.random()*0.02;
+    let cdRate=0.04; // accelerated cooling rate
+    P.ttxm=lerp(P.ttxm,24,cdRate);P.ws_temp=lerp(P.ws_temp,24,cdRate*0.7);
+    P.gb_temp=lerp(P.gb_temp,20,cdRate*0.5);
+    P.brg1_t=lerp(P.brg1_t,24,cdRate*0.6);P.brg2_t=lerp(P.brg2_t,24,cdRate*0.6);
+    P.ex_a=lerp(P.ex_a,24,cdRate);P.ex_b=lerp(P.ex_b,24,cdRate);
+    P.ex_c=lerp(P.ex_c,24,cdRate);P.ex_d=lerp(P.ex_d,24,cdRate);
+    // After 60s sim time AND wheelspace < 60°C → COOLDOWN READY
+    if(phaseT>=getT('cooldown')&&P.ws_temp<60){
+      addLog('Cooldown timer elapsed — wheelspace '+fmt(P.ws_temp,0)+'°C < 60°C');
+      addAlarm('Cooldown complete — press CD STOP to release unit','info');
+      goPhase('COOLDOWN');
+    }
+  }
+
+  if(phase==='COOLDOWN'){
+    // Cooldown ready: waiting for operator CD STOP command
+    P.speed_rpm=150+rnd(3);P.speed_pct=2.3;P.load_mw=0;P.fsr=0;
+    P.vib_a=0.05+Math.random()*0.02;P.vib_b=0.05+Math.random()*0.02;
+    P.ttxm=lerp(P.ttxm,24,0.01);P.ws_temp=lerp(P.ws_temp,24,0.01);
+    P.gb_temp=lerp(P.gb_temp,20,0.01);
+    P.brg1_t=lerp(P.brg1_t,24,0.01);P.brg2_t=lerp(P.brg2_t,24,0.01);
+  }
+
+  if(phase==='TRIP'){
+    P.load_mw=lerp(P.load_mw,0,0.15);P.fsr=0;P.fuel_p=0;
+    P.speed_rpm=lerp(P.speed_rpm,0,0.06);P.speed_pct=lerp(P.speed_pct,0,0.06);
+    P.ttxm=lerp(P.ttxm,30,0.04);P.vigv=0;P.cpr=lerp(P.cpr,1,0.1);
+    let rpm=P.speed_rpm;let c1=3.0*Math.exp(-Math.pow((rpm-2800)/400,2));
+    P.vib_a=(rpm>100?0.2:0)+c1+Math.random()*0.15;P.vib_b=(rpm>100?0.2:0)+c1*0.85+Math.random()*0.12;
+    P.gb_temp=lerp(P.gb_temp,30,0.02);P.brg1_t=lerp(P.brg1_t,24,0.03);P.brg2_t=lerp(P.brg2_t,24,0.03);
+    if(P.speed_rpm<5&&phaseT>10){addLog('Trip coastdown complete — entering turning gear');P.speed_rpm=150;P.speed_pct=2.3;goPhase('TURNING_GEAR');}
+  }
+
+  // Fault injection
+  if(faultActive){
+    faultTimer+=0.2;
+    if(faultActive==='VIB'){P.vib_a+=Math.min(6,faultTimer*0.7);P.vib_b+=Math.min(5,faultTimer*0.6);}
+    if(faultActive==='LO'){P.lo_del=Math.max(0,P.lo_del-faultTimer*0.15);P.lo_hdr=Math.max(0,P.lo_hdr-faultTimer*0.1);}
+    if(faultActive==='GB'){P.gb_temp+=faultTimer*0.08;}
+    if(faultActive==='SURGE'){let w=Math.sin(faultTimer*8)*6;P.cpr=Math.max(1,P.cpr+w*0.3);P.vib_a+=Math.abs(w)*0.5+1.5;if(faultTimer>3){addAlarm('COMPRESSOR SURGE TRIP','trip');doTrip();}}
+    if(faultActive==='FLAME'){doTrip();}
+  }
+
+  // Auto-trip checks
+  if(!tripLatch&&['ACCEL_FIRE','FIRE_HOLD','ACCEL','FSNL','VIB_ANALYSIS','LOADING','BASE_LOAD'].includes(phase)){
+    if(Math.max(P.vib_a,P.vib_b)>5.5){addAlarm('HIGH VIBRATION TRIP — '+fmt(Math.max(P.vib_a,P.vib_b),1)+' mm/s','trip');doTrip();return;}
+    if(P.lo_del>0&&P.lo_del<3){addAlarm('LOW LO PRESSURE TRIP — '+fmt(P.lo_del,1)+' barg','trip');doTrip();return;}
+    if(P.gb_temp>80){addAlarm('HIGH GB TEMP TRIP — '+fmt(P.gb_temp,0)+'°C','trip');doTrip();return;}
+  }
+
+  // Bode history
+  const sec=Math.floor(simT);
+  if(sec>lastBodeSec){lastBodeSec=sec;bodeHistory.push({rpm:P.speed_rpm,vib:P.vib_a});if(bodeHistory.length>400)bodeHistory.shift();}
+
+  updateAll();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// UI UPDATE
+// ═══════════════════════════════════════════════════════════════════
+function updateAll(){
+  // Clock
+  const m=Math.floor(simT/60),s=Math.floor(simT%60);
+  $('sim-clock').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+
+  // Phase badge
+  const pb=$('phase-badge');
+  const running=['CRANK','PURGE','PURGE_HOLD','FIRE','WARMUP','ACCEL_FIRE','FIRE_HOLD','ACCEL','FSNL','VIB_ANALYSIS','LOADING','BASE_LOAD'].includes(phase);
+  pb.textContent=(PH_LBL[phase]||phase)+(P.speed_rpm>0?' ('+fmt(P.speed_rpm,0)+'→'+fmt(P.speed_rpm,0)+' RPM)':'');
+  pb.style.borderColor=phase==='TRIP'?'var(--red)':phase==='BASE_LOAD'?'var(--green)':running?'var(--teal)':'var(--border)';
+  pb.style.color=phase==='TRIP'?'var(--red)':phase==='BASE_LOAD'?'var(--green)':running?'var(--teal)':'var(--text-dim)';
+
+  // SVG animations
+  updateAnim();
+
+  // Buttons
+  const inStandby=phase==='STANDBY';
+  $('btnStart').disabled=!inStandby;
+  $('btnLoad').disabled=!(phase==='FSNL'||phase==='VIB_ANALYSIS');
+  $('btnStop').disabled=!['FSNL','VIB_ANALYSIS','LOADING','BASE_LOAD'].includes(phase);
+  $('btnTrip').disabled=inStandby||['COOLDOWN','COOLDOWN_ACTIVE','TURNING_GEAR','TRIP'].includes(phase);
+  $('btnCdStart').disabled=!(phase==='TURNING_GEAR'&&opMode==='COOLDOWN');
+  $('btnCdStop').disabled=!(phase==='COOLDOWN'&&P.ws_temp<=60);
+
+  // Mode buttons
+  const canSelectMode=['STANDBY','FIRE_HOLD','TURNING_GEAR','COOLDOWN'].includes(phase)||(phase==='TRIP'&&P.speed_rpm<5);
+  $('mode-crank').disabled=!canSelectMode||phase==='FIRE_HOLD';
+  $('mode-fire').disabled=!(['STANDBY'].includes(phase));
+  $('mode-auto').disabled=!(['STANDBY','FIRE_HOLD'].includes(phase));
+  $('mode-remote').disabled=!(['STANDBY','FIRE_HOLD'].includes(phase));
+  $('mode-manual').disabled=!(['STANDBY','FIRE_HOLD'].includes(phase));
+  $('mode-cooldwn').disabled=!(['TURNING_GEAR','COOLDOWN','COOLDOWN_ACTIVE'].includes(phase));
+
+  // Fault buttons
+  const canFault=(running||phase==='FIRE_HOLD')&&!faultActive;
+  $('fi-vib').disabled=!canFault;$('fi-lo').disabled=!canFault;$('fi-gb').disabled=!canFault;
+  $('fi-flame').disabled=!canFault;$('fi-surge').disabled=!canFault;
+
+  // Gauges, permissives, equipment status
+  renderGauges();renderEquipStatus();renderAlarms();renderVibration();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ANIMATION
+// ═══════════════════════════════════════════════════════════════════
+function updateAnim(){
+  const hasFire=['FIRE','WARMUP','ACCEL_FIRE','FIRE_HOLD','ACCEL','FSNL','VIB_ANALYSIS','LOADING','BASE_LOAD'].includes(phase);
+  const hasFlow=['CRANK','PURGE','PURGE_HOLD','FIRE','WARMUP','ACCEL_FIRE','FIRE_HOLD','ACCEL','FSNL','VIB_ANALYSIS','LOADING','BASE_LOAD','NORMAL_SHUTDOWN','TRIP','TURNING_GEAR','COOLDOWN_ACTIVE','COOLDOWN'].includes(phase)&&P.speed_rpm>50;
+
+  // Flame
+  $('flame-main').classList.toggle('on',hasFire);
+
+  // Particles
+  document.querySelectorAll('.exhaust-particle,.intake-particle').forEach(el=>el.classList.toggle('on',hasFlow));
+
+  // Rotors
+  const rpm=P.speed_rpm;
+  // 1. TURBINE & COMPRESSOR (Mechanical - Always spin with speed)
+  ['comp-rotor', 'turb-rotor'].forEach(id => {
+    const el = $(id);
+    el.classList.remove('spin-slow', 'spin-med', 'spin-fast');
+    if (rpm > 4000) el.classList.add('spin-fast');
+    else if (rpm > 1000) el.classList.add('spin-med');
+    else if (rpm > 50) el.classList.add('spin-slow');
+  });
+
+  // 2. GENERATOR (Electrical - Only spin when BREAKER IS CLOSED)
+  // This satisfies the "Command to Load" requirement.
+  const gen = $('gen-rotor');
+  gen.classList.remove('spin-slow', 'spin-med', 'spin-fast');
+  
+  // Logic: Only animate if we are in a 'Loaded' phase
+  const breakerClosed = ['LOADING', 'BASE_LOAD'].includes(phase) || (phase === 'NORMAL_SHUTDOWN' && P.load_mw > 0.1);
+
+  if (breakerClosed && rpm > 50) {
+    if (rpm > 4000) gen.classList.add('spin-fast');
+    else if (rpm > 1000) gen.classList.add('spin-med');
+    else gen.classList.add('spin-slow');
+  }
+  ['gear-hs','gear-ls'].forEach(id=>{
+    const el=$(id);el.classList.remove('spin-slow','spin-med','spin-fast');
+    if(rpm>4000)el.classList.add('spin-fast');else if(rpm>1000)el.classList.add('spin-med');else if(rpm>50)el.classList.add('spin-slow');
+  });
+
+  // Oil lines
+  const loOn=EQ.lo_main.state==='RUNNING'||EQ.lo_aux.state==='RUNNING';
+  $('oil-line1').classList.toggle('on',loOn);$('oil-line2').classList.toggle('on',loOn);
+
+  // Fuel lines
+  const fv=hasFire?'1':'0.3';
+  $('fuel-line1').setAttribute('opacity',fv);$('fuel-line2').setAttribute('opacity',fv);$('fuel-line3').setAttribute('opacity',fv);
+
+  // Bearing colors
+  [['brg1',P.brg1_t],['brg2',P.brg2_t],['gb-oil',P.gb_temp]].forEach(([id,t])=>{
+    $(id).setAttribute('fill',t>70?'#ff2040':t>55?'#ffaa20':t>35?'#00e070':'#0a1218');
+    $(id).setAttribute('stroke',t>70?'#ff204066':t>55?'#ffaa2066':t>35?'#00e07066':'#1a3040');
+  });
+
+  // Trip overlay
+  $('trip-text').classList.toggle('on',phase==='TRIP');
+
+  // Text readouts
+  $('anim-ttxm').textContent=fmt(P.ttxm,0)+'°C';
+  $('anim-ttxm').setAttribute('fill',P.ttxm>590?'#ff2040cc':P.ttxm>400?'#ff8030aa':P.ttxm>100?'#ff603088':'#ff603044');
+  $('anim-speed').textContent=fmt(P.speed_rpm,0)+' RPM';
+  $('gen-mw').textContent=fmt(P.load_mw,1)+' MW';
+  $('load-bar-fill').setAttribute('width',Math.min(60,P.load_mw/57*60));
+
+  // Phase label in SVG
+  const pl=$('anim-phase-label');
+  pl.textContent=PH_LBL[phase]||phase;
+  pl.setAttribute('fill',phase==='TRIP'?'#ff2040':phase==='BASE_LOAD'?'#00e070':'#009999');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// GAUGES
+// ═══════════════════════════════════════════════════════════════════
+const GAUGES=[
+  {id:'speed',lbl:'SPEED',unit:'RPM',get:()=>P.speed_rpm,max:7000,grp:'primary'},
+  {id:'ttxm',lbl:'TTXM',unit:'°C',get:()=>P.ttxm,max:700,warn:590,trip:620,grp:'primary'},
+  {id:'loading',lbl:'LOAD',unit:'MW',get:()=>P.load_mw,max:60,grp:'primary'},
+  {id:'fsr',lbl:'FSR',unit:'%',get:()=>P.fsr,max:110,grp:'primary'},
+  {id:'cpr',lbl:'CPR',unit:':1',get:()=>P.cpr,max:25,grp:'primary'},
+  {id:'vigv',lbl:'VIGV',unit:'%',get:()=>P.vigv,max:100,grp:'primary'},
+  {id:'exa',lbl:'EX-A',unit:'°C',get:()=>P.ex_a,max:700,grp:'exhaust'},
+  {id:'exb',lbl:'EX-B',unit:'°C',get:()=>P.ex_b,max:700,grp:'exhaust'},
+  {id:'exc',lbl:'EX-C',unit:'°C',get:()=>P.ex_c,max:700,grp:'exhaust'},
+  {id:'exd',lbl:'EX-D',unit:'°C',get:()=>P.ex_d,max:700,grp:'exhaust'},
+  {id:'viba',lbl:'VIB BRG-1',unit:'mm/s',get:()=>P.vib_a,max:8,warn:4.5,trip:5.5,grp:'vib'},
+  {id:'vibb',lbl:'VIB BRG-2',unit:'mm/s',get:()=>P.vib_b,max:8,warn:4.5,trip:5.5,grp:'vib'},
+  {id:'lodel',lbl:'LO DELIV',unit:'barg',get:()=>P.lo_del,max:12,grp:'vib'},
+  {id:'lohdr',lbl:'LO HDR',unit:'barg',get:()=>P.lo_hdr,max:8,grp:'vib'},
+];
+
+function initGauges(){
+  ['primary','exhaust','vib'].forEach(grp=>{
+    const el=$('gauges-'+grp);if(!el)return;
+    el.innerHTML=GAUGES.filter(g=>g.grp===grp).map(g=>`<div class="gauge" id="g-${g.id}"><div class="g-lbl">${g.lbl}</div><div><span class="g-val">0</span><span class="g-unit">${g.unit}</span></div><div class="g-bar"><div class="g-bar-fill"></div></div></div>`).join('');
+  });
+}
+
+function renderGauges(){
+  GAUGES.forEach(g=>{
+    const el=$('g-'+g.id);if(!el)return;
+    const v=g.get();const d=g.unit==='RPM'?0:g.unit==='°C'?0:g.max>10?1:2;
+    el.querySelector('.g-val').textContent=fmt(v,d);
+    const pct=Math.min(100,v/g.max*100);
+    const bar=el.querySelector('.g-bar-fill');
+    bar.style.width=pct+'%';
+    bar.style.background=g.trip&&v>g.trip?'var(--red)':g.warn&&v>g.warn?'var(--amber)':'var(--teal)';
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// EQUIPMENT STATUS SIDEBAR
+// ═══════════════════════════════════════════════════════════════════
+function renderEquipStatus(){
+  const el=$('eq-status-list');
+  el.innerHTML=Object.entries(EQ).map(([k,eq])=>{
+    const cls=eq.state==='RUNNING'?'on':eq.state==='STARTING'?'warn':eq.state==='STOPPING'?'warn':'';
+    return `<div class="eq-row"><div class="eq-dot ${cls}"></div><span class="eq-name">${eq.tag}</span><span class="eq-val">${eq.state}</span></div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// AUXILIARY TAB
+// ═══════════════════════════════════════════════════════════════════
+function buildAuxPanels(){
+  const groups={
+    lo:[['lo_main','LO Pump A — Main (LOP-01)','LO Delivery',()=>fmt(P.lo_del,1)+' barg'],['lo_aux','LO Pump B — Standby (LOP-02)','LO Header',()=>fmt(P.lo_hdr,1)+' barg'],['lo_emerg','LO Pump C — Emergency (LOP-03)','LO Temp',()=>fmt(P.lo_temp,1)+' °C']],
+    ho:[['ho_a','Hydraulic Oil Pump A (HOP-01)','HO Press',()=>fmt(P.ho_press,0)+' barg'],['ho_b','Hydraulic Oil Pump B (HOP-02)','','']],
+    vent:[['vent_a','Encl Vent Fan 1 (EVF-01)','',''],['vent_b','Encl Vent Fan 2 (EVF-02)','',''],['ome_a','Oil Mist Eliminator A (OME-01)','',''],['ome_b','Oil Mist Eliminator B (OME-02)','',''],['exh_a','Exhaust Frame Fan A (EFF-01)','',''],['exh_b','Exhaust Frame Fan B (EFF-02)','',''],['jo_a','Jacking Oil Pump A (JOP-01)','',''],['jo_b','Jacking Oil Pump B (JOP-02)','','']],
+    gas:[['seal','Seal Gas System (SGS-01)','Seal Press',()=>fmt(P.seal_p,1)+' barg'],['esdv','ESDV Fuel Gas Valve (ESDV-FG)','FG Press',()=>fmt(P.fg_press,0)+' barg']]
+  };
+  for(const[grp,items] of Object.entries(groups)){
+    const el=$('aux-'+grp);if(!el)continue;
+    el.innerHTML=items.map(([key,name,rdLbl,rdFn])=>{
+      const eq=EQ[key];
+      return `<div class="aux-panel" id="ap-${key}"><div class="aux-panel-hdr"><span class="ap-title">${name}</span><span class="ap-status off" id="aps-${key}">OFF</span></div><div class="aux-panel-body"><div class="aux-ctrl-btns"><button class="aux-btn" onclick="eqStart('${key}')" id="ab-start-${key}">START</button><button class="aux-btn" onclick="eqStop('${key}')" id="ab-stop-${key}">STOP</button><button class="aux-btn" onclick="eqToggleAuto('${key}')" id="ab-auto-${key}">AUTO</button></div>${rdLbl?`<div class="aux-reading"><span class="ar-val" id="ar-${key}">0</span><span class="ar-lbl">${rdLbl}</span></div>`:''}<div style="flex:1;text-align:right"><div style="height:4px;width:120px;background:#0a1218;border-radius:2px;display:inline-block;vertical-align:middle"><div style="height:100%;border-radius:2px;background:var(--teal);transition:width .3s" id="abar-${key}"></div></div></div></div></div>`;
+    }).join('');
+  }
+}
+
+function updateAuxPanels(){
+  for(const[key,eq] of Object.entries(EQ)){
+    const status=$('aps-'+key);
+    if(status){
+      status.textContent=eq.state;
+      status.className='ap-status '+(eq.state==='RUNNING'?'running':eq.state==='STARTING'?'starting':eq.state==='STOPPING'?'starting':'off');
+    }
+    const bar=$('abar-'+key);
+    if(bar)bar.style.width=(eq.rampT/eq.rampMax*100)+'%';
+    const autoBtn=$('ab-auto-'+key);
+    if(autoBtn)autoBtn.classList.toggle('active',eq.auto);
+    const startBtn=$('ab-start-'+key);
+    if(startBtn)startBtn.disabled=eq.state==='RUNNING'||eq.state==='STARTING';
+    const stopBtn=$('ab-stop-'+key);
+    if(stopBtn)stopBtn.disabled=eq.state==='OFF'||eq.state==='STOPPING';
+  }
+  // Update readings
+  const readings={lo_main:()=>fmt(P.lo_del,1),lo_aux:()=>fmt(P.lo_hdr,1),lo_emerg:()=>fmt(P.lo_temp,1),ho_a:()=>fmt(P.ho_press,0),seal:()=>fmt(P.seal_p,1),esdv:()=>fmt(P.fg_press,0)};
+  for(const[key,fn] of Object.entries(readings)){
+    const el=$('ar-'+key);if(el)el.textContent=fn();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PERMISSIVES TAB
+// ═══════════════════════════════════════════════════════════════════
+function renderPermissives(){
+  const perms=evalPerms();
+  for(const[section,data] of Object.entries(perms)){
+    const el=$('perm-'+section);if(!el)continue;
+    const okCount=data.items.filter(i=>i.ok).length;
+    const total=data.items.length;
+    const allOk=okCount===total;
+    el.innerHTML=`<div class="perm-panel"><div class="perm-panel-hdr"><span class="pp-title">${section.toUpperCase()} PERMIT</span><span class="pp-count ${allOk?'complete':'incomplete'}">${okCount}/${total} ${allOk?'✓ READY':'✗ NOT READY'}</span></div>${data.items.map(i=>`<div class="perm-row"><div class="perm-dot ${i.ok?'ok':'fail'}"></div><span class="perm-desc">${i.desc}</span><span class="perm-val">${i.val}</span></div>`).join('')}</div>`;
+  }
+  // Overall ready badge
+  const masterOk=allPermsOK('startup'),crankOk=allPermsOK('cranking'),fireOk=allPermsOK('ignition');
+  const ready=masterOk&&crankOk&&(opMode==='CRANK'||fireOk);
+  $('perm-overall').innerHTML=`<div class="perm-ready-badge ${ready?'ready':'not-ready'}">${ready?'✓ READY TO START':'✗ NOT READY TO START'}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MONITORING TAB
+// ═══════════════════════════════════════════════════════════════════
+function buildMonitoring(){
+  const exLabels=['TE-A','TE-B','TE-C','TE-D','TE-E','TE-F','TE-G','TE-H','TE-J','TE-K','TE-L','TE-M'];
+  $('mon-exhaust').innerHTML=exLabels.map((l,i)=>`<div class="mon-cell"><div class="mc-lbl">${l}</div><div class="mc-val" id="mc-ex${i}">24</div><div class="mc-bar"><div class="mc-bar-fill" id="mcb-ex${i}"></div></div></div>`).join('');
+  const brgLabels=['BRG-1','BRG-2','BRG-3 (GB)','LO TEMP','WS TEMP'];
+  $('mon-bearing').innerHTML=brgLabels.map((l,i)=>`<div class="mon-cell"><div class="mc-lbl">${l}</div><div class="mc-val" id="mc-brg${i}">24</div><div class="mc-bar"><div class="mc-bar-fill" id="mcb-brg${i}"></div></div></div>`).join('');
+  $('mon-dln').innerHTML=['PRIMARY','SECONDARY','TERTIARY','QUATERNARY'].map((l,i)=>`<div class="mon-cell"><div class="mc-lbl">${l}</div><div class="mc-val" id="mc-dln${i}">0</div><div class="mc-bar"><div class="mc-bar-fill" id="mcb-dln${i}"></div></div></div>`).join('');
+}
+
+function updateMonitoring(){
+  // Exhaust spread
+  const baseEx=(P.ex_a+P.ex_b+P.ex_c+P.ex_d)/4;
+  for(let i=0;i<12;i++){
+    const v=baseEx+rnd(15);
+    const el=$('mc-ex'+i);if(el)el.textContent=fmt(v,0);
+    const bar=$('mcb-ex'+i);if(bar){bar.style.width=Math.min(100,v/700*100)+'%';bar.style.background=v>600?'var(--red)':v>500?'var(--amber)':'var(--teal)';}
+  }
+  // Bearings
+  const brgVals=[P.brg1_t,P.brg2_t,P.gb_temp,P.lo_temp,P.ws_temp];
+  brgVals.forEach((v,i)=>{
+    const el=$('mc-brg'+i);if(el)el.textContent=fmt(v,1);
+    const bar=$('mcb-brg'+i);if(bar){bar.style.width=Math.min(100,v/120*100)+'%';bar.style.background=v>80?'var(--red)':v>60?'var(--amber)':'var(--teal)';}
+  });
+  // DLN
+  const dlnBase=P.fsr>10?P.fsr*0.8:0;
+  [1,0.7,0.3,0.1].forEach((f,i)=>{
+    const v=dlnBase*f;
+    const el=$('mc-dln'+i);if(el)el.textContent=fmt(v,0);
+    const bar=$('mcb-dln'+i);if(bar){bar.style.width=Math.min(100,v/100*100)+'%';bar.style.background='var(--teal)';}
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ALARMS & LOG
+// ═══════════════════════════════════════════════════════════════════
+function addAlarm(msg,sev){
+  const ts=new Date().toLocaleTimeString();
+  alarms.unshift({ts,msg,sev:sev||'warn',ack:false});
+  if(alarms.length>50)alarms.length=50;
+}
+function addLog(msg){
+  const ts=new Date().toLocaleTimeString();
+  logEntries.unshift({ts,msg});
+  if(logEntries.length>200)logEntries.length=200;
+}
+function ackAlarms(){alarms.forEach(a=>a.ack=true);}
+
+function renderAlarms(){
+  const unack=alarms.filter(a=>!a.ack).length;
+  $('alarm-count').textContent=unack>0?'('+unack+')':'';
+  $('tab-alarm-badge').textContent=unack>0?'('+unack+')':'';
+  $('at-total').textContent=alarms.length;$('at-unack').textContent=unack;
+  $('alarm-list').innerHTML=alarms.length?alarms.slice(0,15).map(a=>`<div class="alm-entry ${a.sev} ${a.ack?'acked':''}">${a.ts} ${a.msg}</div>`).join(''):'<div style="color:#1a2430;padding:4px">No active alarms</div>';
+  $('alarm-table-body').innerHTML=alarms.map((a,i)=>`<div class="alm-entry ${a.sev} ${a.ack?'acked':''}" style="display:flex;gap:8px;padding:4px 8px;border-bottom:1px solid #0e1520"><span style="width:80px;flex-shrink:0;color:var(--text-dim)">${a.ts}</span><span style="width:50px;flex-shrink:0;text-transform:uppercase;font-weight:700;font-size:9px">${a.sev}</span><span style="flex:1">${a.msg}</span><span style="width:40px;text-align:center">${a.ack?'ACK':'<button class="ack-btn" onclick="alarms[${i}].ack=true" style="font-size:8px;padding:1px 6px">ACK</button>'}</span></div>`).join('');
+  $('log-list').innerHTML=logEntries.map(l=>`<div class="log-entry"><span class="log-ts">${l.ts}</span>${l.msg}</div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// VIBRATION CANVAS
+// ═══════════════════════════════════════════════════════════════════
+let vibC,vibCtx,bodeC,bodeCtx;
+function initCanvas(c,h){
+  const dpr=window.devicePixelRatio||1;
+  const rect=c.getBoundingClientRect();
+  const w=rect.width>0?rect.width:c.parentElement.getBoundingClientRect().width-20||600;
+  c.width=w*dpr;c.height=h*dpr;c.style.height=h+'px';
+  const ctx=c.getContext('2d');ctx.scale(dpr,dpr);
+  c._lw=w;c._lh=h;return ctx;
+}
+
+function renderVibration(){
+  if(!vibC||!$('tab-vibration').classList.contains('active'))return;
+  if(!vibC._lw||vibC._lw<10){vibCtx=initCanvas(vibC,200);bodeCtx=initCanvas(bodeC,140);}
+  const W=vibC._lw||600,H=vibC._lh||200;
+  // Spectrum
+  vibCtx.clearRect(0,0,W,H);vibCtx.fillStyle='#080c12';vibCtx.fillRect(0,0,W,H);
+  vibCtx.strokeStyle='#152030';vibCtx.lineWidth=0.5;vibCtx.beginPath();
+  for(let i=0;i<=6;i++){const x=(i/6)*W;vibCtx.moveTo(x,0);vibCtx.lineTo(x,H);}
+  vibCtx.stroke();
+  const f1x=P.speed_rpm/60;
+  if(f1x>0){
+    vibCtx.strokeStyle='#009999';vibCtx.lineWidth=2;vibCtx.beginPath();
+    for(let x=0;x<W;x++){
+      const f=(x/W)*300;let amp=0;
+      const d1=f-f1x,d2=f-f1x*2;
+      if(Math.abs(d1)<12)amp+=P.vib_a*40*Math.exp(-(d1*d1)/18);
+      if(Math.abs(d2)<12)amp+=P.vib_a*15*Math.exp(-(d2*d2)/18);
+      amp+=Math.random()*2;
+      const y=H-Math.max(0,amp);
+      x===0?vibCtx.moveTo(x,y):vibCtx.lineTo(x,y);
+    }
+    vibCtx.stroke();
+  }
+  $('vr-1xf').textContent=fmt(f1x,1)+' Hz';
+  $('vr-1xa').textContent=fmt(P.vib_a,2)+' mm/s';
+  $('vr-2xa').textContent=fmt(P.vib_a*0.3,2)+' mm/s';
+
+  // Bode
+  const BW=bodeC._lw||W,BH=bodeC._lh||140;
+  bodeCtx.clearRect(0,0,BW,BH);bodeCtx.fillStyle='#080c12';bodeCtx.fillRect(0,0,BW,BH);
+  bodeCtx.strokeStyle='#152030';bodeCtx.lineWidth=0.5;bodeCtx.beginPath();
+  for(let i=0;i<=7;i++){const x=(i/7)*BW;bodeCtx.moveTo(x,0);bodeCtx.lineTo(x,BH);}
+  bodeCtx.strokeStyle='#ff204033';bodeCtx.lineWidth=1;
+  const dy=BH-(5.5/8)*BH;bodeCtx.moveTo(0,dy);bodeCtx.lineTo(BW,dy);bodeCtx.stroke();
+  bodeCtx.fillStyle='#ff204044';bodeCtx.font='9px Share Tech Mono';bodeCtx.fillText('TRIP: 5.5',4,dy-3);
+  // Critical markers
+  [2800,5200].forEach((rpm,i)=>{
+    const cx=(rpm/7000)*BW;
+    bodeCtx.strokeStyle='#ffaa2033';bodeCtx.lineWidth=1;bodeCtx.setLineDash([3,4]);
+    bodeCtx.beginPath();bodeCtx.moveTo(cx,0);bodeCtx.lineTo(cx,BH);bodeCtx.stroke();bodeCtx.setLineDash([]);
+    bodeCtx.fillStyle='#ffaa2044';bodeCtx.fillText((i?'2nd':'1st')+' Nc',cx+3,12);
+  });
+  if(bodeHistory.length>1){
+    bodeCtx.beginPath();bodeCtx.strokeStyle='#ffaa20';bodeCtx.lineWidth=2;
+    bodeHistory.forEach((pt,i)=>{let x=(pt.rpm/7000)*BW,y=BH-(pt.vib/8)*BH;i===0?bodeCtx.moveTo(x,y):bodeCtx.lineTo(x,y);});
+    bodeCtx.stroke();
+    const last=bodeHistory[bodeHistory.length-1];
+    bodeCtx.beginPath();bodeCtx.arc((last.rpm/7000)*BW,BH-(last.vib/8)*BH,4,0,Math.PI*2);bodeCtx.fillStyle='#ffaa20';bodeCtx.fill();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════════════════
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  $('tab-'+id).classList.add('active');btn.classList.add('active');
+  if(id==='vibration'&&vibC)requestAnimationFrame(()=>{vibCtx=initCanvas(vibC,200);bodeCtx=initCanvas(bodeC,140);});
+  if(id==='permissives')renderPermissives();
+  if(id==='auxiliary')updateAuxPanels();
+  if(id==='monitoring')updateMonitoring();
+  if(id==='instructor')renderInstructor();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INSTRUCTOR PANEL (Force Diagram)
+// ═══════════════════════════════════════════════════════════════════
+function renderInstructor(){
+  const grid=$('timing-grid');
+  let h='<table style="width:100%;border-collapse:collapse;font-size:11px">';
+  h+='<tr style="color:var(--text-dim);border-bottom:1px solid #1a2636"><td style="padding:4px 6px">PHASE</td><td style="width:80px;text-align:center">TIME (s)</td><td style="width:60px;text-align:center">DEFAULT</td><td style="width:60px;text-align:center">EFFECTIVE</td></tr>';
+  for(const[key,label] of Object.entries(TIM_LABELS)){
+    const def=TIM_DEFAULTS[key],cur=TIM[key],eff=(TIM[key]/simSpeed).toFixed(1);
+    const changed=cur!==def;
+    h+=`<tr style="border-bottom:1px solid #0d1925;color:${changed?'var(--amber)':'var(--text-mid)'}">
+      <td style="padding:5px 6px;font-family:'Chakra Petch';letter-spacing:0.5px">${label}</td>
+      <td style="text-align:center"><input type="number" min="1" max="99999" value="${cur}" onchange="updateTiming('${key}',this.value)" style="width:60px;background:#0a1018;border:1px solid ${changed?'var(--amber)':'#1a2636'};color:var(--text-hi);text-align:center;padding:3px;font-family:'Chakra Petch';font-size:11px;border-radius:3px"></td>
+      <td style="text-align:center;color:var(--text-dim)">${def}</td>
+      <td style="text-align:center;color:var(--teal);font-weight:700">${eff}s</td>
+    </tr>`;
+  }
+  h+='</table>';
+  h+='<div style="margin-top:8px;display:flex;gap:8px">';
+  h+='<button class="cmd-btn gray" style="font-size:10px;padding:4px 12px" onclick="resetTimings()">↺ RESET TO DEFAULTS</button>';
+  h+='<button class="cmd-btn amber" style="font-size:10px;padding:4px 12px" onclick="setDemoMode()">⚡ DEMO MODE (30% faster)</button>';
+  h+='</div>';
+  grid.innerHTML=h;
+  // Cooldown settings
+  const cd=$('cooldown-settings');
+  cd.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:11px">
+    <tr style="color:var(--text-mid);border-bottom:1px solid #0d1925">
+      <td style="padding:5px 6px;font-family:'Chakra Petch'">Cooldown timer</td>
+      <td style="text-align:center;color:var(--teal)">${TIM.cooldown}s sim = ${(TIM.cooldown/simSpeed/3600).toFixed(2)} hr effective</td>
+    </tr>
+    <tr style="color:var(--text-dim);border-bottom:1px solid #0d1925">
+      <td style="padding:5px 6px">Set to 36000 for real 10-hour cooldown</td>
+      <td style="text-align:center"><button class="cmd-btn gray" style="font-size:10px;padding:2px 10px" onclick="TIM.cooldown=36000;renderInstructor()">SET 10hr</button>
+      <button class="cmd-btn gray" style="font-size:10px;padding:2px 10px" onclick="TIM.cooldown=60;renderInstructor()">SET 60s</button></td>
+    </tr>
+    <tr style="color:var(--text-mid)">
+      <td style="padding:5px 6px;font-family:'Chakra Petch'">Wheelspace trip temp</td>
+      <td style="text-align:center;color:var(--teal)">60°C</td>
+    </tr>
+  </table>`;
+}
+function updateTiming(key,val){TIM[key]=Math.max(1,parseInt(val)||TIM_DEFAULTS[key]);renderInstructor();}
+function resetTimings(){Object.assign(TIM,TIM_DEFAULTS);simSpeed=1;$('speed-mult-label').textContent='1×';addLog('Instructor: timings reset to defaults');renderInstructor();}
+function setDemoMode(){for(const k in TIM)TIM[k]=Math.round(TIM_DEFAULTS[k]*0.7);addLog('Instructor: DEMO MODE — all phases 30% faster');renderInstructor();}
+
+// ═══════════════════════════════════════════════════════════════════
+// FAULT INJECTION
+// ═══════════════════════════════════════════════════════════════════
+function faultInject(type){
+  if(faultActive)return;
+  faultActive=type;faultTimer=0;
+  addAlarm('FAULT INJECT: '+type,'warn');addLog('⚡ FAULT: '+type+' injected');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════
+function init(){
+  initGauges();buildAuxPanels();buildMonitoring();
+  vibC=$('vib-canvas');bodeC=$('bode-canvas');
+  addLog('TCS-3000 State-Driven Turbine Trainer initialized');
+  addLog('Step 1: Start auxiliary equipment on AUXILIARY tab (LOP, HOP, EVF, OME, JOP, SGS, ESDV)');
+  addLog('Step 2: Verify all TCS permits on PERMISSIVES tab (Startup → Cranking → Ignition → Loading)');
+  addLog('Step 3: Select operating mode (CRANK / FIRE / AUTO) and press START');
+  updateAll();renderPermissives();
+  setInterval(()=>{tick();updateAuxPanels();
+    if($('tab-permissives').classList.contains('active'))renderPermissives();
+    if($('tab-monitoring').classList.contains('active'))updateMonitoring();
+  },200);
+}
+init();
+</script>
+</body></html>
